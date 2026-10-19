@@ -359,7 +359,7 @@ if (!isSecureContext || !crypto.subtle) { $('#startMeldung').textContent = 'Dies
 startVorbereiten();
 
 /* v76: Mengen-/Anzahl-Feld antippen → Inhalt (z. B. „0“) markieren, damit direkt überschrieben wird (iOS-sicher) */
-['#bMenge', '#qMenge', '#gAnzahl', '#sAnzahl'].forEach(id => {
+['#bMenge', '#qMenge', '#gAnzahl', '#sAnzahl', '#aSuche', '#sSuche', '#bArtikel', '#qArtikel', '#gBg'].forEach(id => {   // v78: auch Suchzeilen
   const el = $(id); if (!el) return; let frisch = false;
   el.addEventListener('focus', () => { frisch = true; setTimeout(() => { try { el.setSelectionRange(0, el.value.length); } catch { el.select(); } }, 0); });
   el.addEventListener('mouseup', e => { if (frisch) { e.preventDefault(); frisch = false; } });
