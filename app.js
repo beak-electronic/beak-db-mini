@@ -137,10 +137,9 @@ function artikelZeigen(a) {
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
     <div class="werte">${W('Artikel', a.ean)}${W('Typ', a.t)}${W('Lagerort', a.lo)}
-      ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Hersteller', a.h)}</div>
-    <div class="bemlief">
+      ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Hersteller', a.h)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
+    <div class="bemlief einspaltig">
       <div class="wert breit bem"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
-      <div class="lief"><table><thead><tr><th>Lieferant</th></tr></thead><tbody>${(a.l || []).map(n => `<tr><td>${esc(Array.isArray(n) ? n[0] : n)}</td></tr>`).join('') || '<tr><td class="fix">–</td></tr>'}</tbody></table></div>
     </div>
     <div class="unten">
       <div><h3>Letzte Buchungen</h3>${bu ? `<table><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}

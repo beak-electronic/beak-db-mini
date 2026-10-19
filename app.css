@@ -150,3 +150,6 @@ select.vz.lang { width:0; flex:1 1 auto; min-width:0; }
   .tab { padding:0 8px; font-size:14px; white-space:nowrap; }
   .tab.icon { padding:0 8px; }
 }
+/* v74: Lieferanten als Kommaliste bei den Werten, Bemerkung volle Breite */
+.bemlief.einspaltig { grid-template-columns: 1fr; }
+.werte .wert.lieflist { grid-column: 1 / -1; }
