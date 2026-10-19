@@ -1,0 +1,126 @@
+/* BEAK DB mini – Skin wie "hell": berechnete/angezeigte Werte pink, feste Texte 90 % Schwarz, Anzeigewerte ohne Rahmen. */
+[hidden] { display:none !important; }
+:root { --pink:#D80373; --pink2:#B0025E; --grau:#4B4748; --fix:rgba(0,0,0,.9); --linie:#D9D7D8; --back:#F4F4F4; --feld:#FFFFFF; --soft:#FBE6F0; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; height:100%; }
+body { font:16px/1.35 -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif; color:var(--fix); background:var(--back); -webkit-text-size-adjust:100%; }
+header#kopf { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:16px; background:var(--grau); color:#fff;
+  padding:calc(env(safe-area-inset-top) + 8px) 14px 8px; min-height:60px; }
+.marke { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
+.marke .logo { display:block; height:30px; width:auto; }
+.startlogo { padding:10px 6px 4px; margin:0 0 14px; }
+.startlogo img { display:block; width:100%; max-width:440px; height:auto; margin:0 auto; }
+nav#tabs { display:flex; gap:6px; flex:1; justify-content:flex-end; flex-wrap:wrap; }
+.tab { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:10px; min-height:44px; padding:0 14px; font-size:16px; font-weight:600; }
+.tab.an { background:var(--pink); border-color:var(--pink); }
+.tab.icon { font-size:20px; padding:0 12px; }
+main { padding:12px; padding-bottom:calc(env(safe-area-inset-bottom) + 12px); }
+.karte { background:var(--feld); border:1px solid var(--linie); border-radius:14px; padding:14px; }
+h1 { margin:0 0 10px; font-size:28px; color:var(--grau); } h2 { margin:0 0 12px; font-size:22px; color:var(--grau); } h3 { margin:18px 0 6px; font-size:17px; }
+button { font:inherit; min-height:44px; border-radius:10px; border:1px solid #BDB9BA; background:#fff; color:var(--fix); padding:0 16px; font-weight:600; }
+button:active { filter:brightness(.92); }
+button.pink { background:var(--pink); border-color:var(--pink); color:#fff; }
+button.gross { width:100%; min-height:54px; font-size:19px; margin-top:8px; }
+button.klein { min-height:36px; padding:0 10px; font-size:14px; }
+button:disabled { opacity:.45; }
+input,select { font:inherit; font-size:17px; min-height:46px; width:100%; border:1px solid #BDB9BA; border-radius:10px; padding:0 12px; background:#fff; color:var(--fix); }
+input:focus,select:focus { outline:none; border-color:var(--pink); box-shadow:0 0 0 3px var(--soft); }
+.fix { color:var(--fix); } .klein { font-size:14px; } .anz { color:var(--pink); font-weight:600; }
+.meldung { min-height:1.4em; font-weight:600; color:var(--pink); }
+.meldung.fehler { color:#B00020; }
+.zeile { display:flex; gap:10px; align-items:center; } .zeile > input { flex:1; } .zeile.rechts { justify-content:flex-end; margin-top:12px; }
+
+/* Start */
+.start { max-width:520px; margin:6vh auto 0; display:flex; flex-direction:column; gap:12px; }
+.dateiwahl { position:relative; display:flex; align-items:center; justify-content:center; min-height:54px; border:2px dashed var(--pink); border-radius:12px; color:var(--pink); font-weight:700; }
+.dateiwahl input { position:absolute; inset:0; opacity:0; min-height:0; }
+
+/* Artikel-Datei */
+.split { display:grid; grid-template-columns: 330px 1fr; gap:12px; height:calc(100vh - 60px - 24px - env(safe-area-inset-top)); }
+.liste { display:flex; flex-direction:column; min-height:0; padding:10px; }
+.treffer { font-size:13px; margin:6px 2px; }
+ul.ergebnis { list-style:none; margin:0; padding:0; overflow:auto; -webkit-overflow-scrolling:touch; flex:1; }
+ul.ergebnis li { display:flex; gap:10px; padding:10px 8px; border-bottom:1px solid #EEE; min-height:48px; align-items:center; }
+ul.ergebnis li.an { background:var(--soft); border-left:4px solid var(--pink); padding-left:4px; }
+ul.ergebnis li .nr { font-weight:700; color:var(--pink); min-width:66px; text-align:right; font-variant-numeric:tabular-nums; }
+ul.ergebnis li .bez { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+ul.ergebnis.klein { max-height:240px; flex:none; margin:4px 0 8px; } ul.ergebnis.klein:empty { display:none; }
+.detail { overflow:auto; position:relative; display:flex; flex-direction:column; gap:8px; min-height:0; padding:12px; }
+.detail table { font-size:14px; } .detail td { padding:4px 5px; } .detail th { padding:4px 5px; }
+.detail h3 { margin:4px 0; }
+.dkopf { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.dkopf .nr { font-size:26px; font-weight:800; color:var(--pink); }
+.dkopf .bez { font-size:19px; font-weight:700; color:var(--fix); }
+.auslauf { background:#B00020; color:#fff; border-radius:6px; padding:1px 8px; font-size:13px; font-weight:700; }
+.werte { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:2px 14px; }
+.wert { display:flex; flex-direction:column; padding:2px 0; border-bottom:1px solid #F0F0F0; }
+.wert.breit span { font-weight:400; font-size:15px; }
+.wert label { font-size:12px; color:var(--fix); font-weight:600; text-transform:none; }
+.wert span { color:var(--fix); font-weight:600; min-height:1.3em; overflow-wrap:anywhere; }   /* Anzeige ohne Rahmen */
+.bestand { display:flex; gap:10px; }
+.bestand .b { flex:1; background:var(--soft); border-radius:10px; padding:5px 12px; }
+.bestand .b label { display:block; font-size:12px; font-weight:600; color:var(--fix); }
+.bestand .b span { font-size:23px; font-weight:800; color:var(--pink); font-variant-numeric:tabular-nums; }
+.unten { display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:end; margin-top:auto; }
+.bild { width:260px; height:195px; border:1px solid var(--linie); border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.bild img { max-width:100%; max-height:100%; pointer-events:none; -webkit-touch-callout:none; user-select:none; }   /* kein Vergrößern */
+.bild.leer { color:#999; font-size:14px; }
+table { border-collapse:collapse; width:100%; font-size:15px; }
+th { text-align:left; font-size:13px; font-weight:700; color:var(--fix); border-bottom:2px solid var(--pink); padding:6px; white-space:nowrap; }
+td { padding:7px 6px; border-bottom:1px solid #EEE; vertical-align:top; }
+td.r, th.r { text-align:right; font-variant-numeric:tabular-nums; }
+td.w { color:var(--pink); font-weight:600; }
+.aktionen { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Formulare */
+.formular { max-width:760px; margin:0 auto; }
+.feld { display:grid; grid-template-columns: 150px 1fr auto; gap:10px; align-items:center; margin:8px 0; }
+.feld label { font-weight:600; color:var(--fix); }
+.anzbox { background:var(--soft); border-radius:10px; padding:8px 12px; margin:6px 0; color:var(--pink); font-weight:600; }
+.anzbox:empty { display:none; }
+.umschalter { display:flex; border:1px solid var(--pink); border-radius:10px; overflow:hidden; }
+.umschalter button { flex:1; border:0; border-radius:0; color:var(--pink); background:#fff; min-height:46px; }
+.umschalter button.an { background:var(--pink); color:#fff; }
+.journal { list-style:none; padding:0; margin:0; font-size:14px; max-height:300px; overflow:auto; }
+.journal li { padding:6px 0; border-bottom:1px solid #EEE; }
+.dlg { position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:10; padding:20px; }
+.dlg .karte { max-width:520px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+.nurdruck { display:none; }
+
+/* Hochformat */
+@media (max-width: 900px) {
+  .split { grid-template-columns: 1fr; grid-template-rows: 300px 1fr; height:auto; }
+  .detail { overflow:visible; }
+  .tab { padding:0 10px; font-size:15px; }
+  .marke .logo { height:24px; }
+}
+@media (max-width: 600px) { .feld { grid-template-columns: 1fr; } .unten { grid-template-columns:1fr; } .bild { width:100%; } }
+
+
+/* v62 */
+.stklkopf { display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:end; }
+.druckwahl label { display:block; font-size:13px; font-weight:600; margin-bottom:4px; }
+.druckwahl select { width:auto; max-width:440px; }
+input.anzahl { width:90px; flex:none; }
+.formular.breit { max-width:900px; }
+.feld > label { line-height:1.2; }
+.artzeile { display:grid; grid-template-columns: 1fr 2fr 1fr 2fr; gap:8px 12px; background:var(--soft); border-radius:10px; padding:8px 12px; margin:6px 0 10px; }
+.artzeile label { display:block; font-size:12px; font-weight:600; color:var(--fix); }
+.artzeile span { color:var(--pink); font-weight:700; min-height:1.3em; display:block; }
+select.vz { width:220px; flex:none; }
+.me-kopf { display:grid; grid-template-columns: 1fr 280px; gap:16px; }
+.me-seite { display:flex; flex-direction:column; gap:8px; }
+.me-seite label { font-weight:700; text-align:center; }
+button.modus.an { background:var(--soft); border-color:var(--pink); color:var(--pink); }
+.tabelle { overflow:auto; max-height:calc(100vh - 470px); min-height:120px; }
+.tabelle table { font-size:13px; } .tabelle td, .tabelle th { padding:4px 5px; }
+td.ja { color:var(--pink); font-weight:700; } td.nein { color:#888; font-weight:700; }
+@media (max-width: 900px) { .stklkopf { grid-template-columns: 1fr; } .me-kopf { grid-template-columns: 1fr; } .me-seite { flex-direction:row; flex-wrap:wrap; } .me-seite label { width:100%; text-align:left; }
+  .artzeile { grid-template-columns: 1fr 2fr; } .tabelle { max-height:none; } }
+.tabelle td, .tabelle th { white-space:nowrap; }
+
+/* v69: Bemerkung mit Zeilenumbrüchen wie Windows, Lieferanten schmal rechts daneben */
+.bemlief { display:grid; grid-template-columns: minmax(0,1fr) 190px; gap:14px; align-items:start; margin-top:4px; }
+.wert.bem span { white-space:pre-wrap; max-height:9.5em; overflow:auto; }
+.bemlief .lief table { width:100%; }
+@media (max-width: 900px) { .bemlief { grid-template-columns: 1fr; } }

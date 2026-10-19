@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BEAK DB mini">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#4B4748">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>BEAK DB mini</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<!-- BEAK DB mini: Code ohne Daten. Die Datenbank (verschlüsselt) wird aus iCloud Drive gewählt und nur lokal entschlüsselt. -->
+<header id="kopf">
+  <div class="marke"><img class="logo" src="logo-db-mini.svg" alt="BEAK DB mini" width="271" height="30"></div>
+  <nav id="tabs" hidden>
+    <button data-v="artikel" class="tab">Artikel-Datei</button>
+    <button data-v="stkl" class="tab">Stückliste</button>
+    <button data-v="buchen" class="tab">Artikel buchen</button>
+    <button data-v="bg" class="tab">Material-Entnahme</button>
+    <button data-v="info" class="tab icon" title="Einstellungen">⚙</button>
+  </nav>
+</header>
+
+<main>
+<!-- Start / Entsperren -->
+<section id="v-start" class="ansicht">
+  <div class="karte start">
+    <h1 class="startlogo"><img src="logo-db-mini-hell.svg" alt="BEAK DB mini"></h1>
+    <p class="fix" id="startText">Datenbank aus iCloud Drive wählen (Datei <b>beak-db-mini.beakdb</b>), Kennwort eingeben.</p>
+    <label class="dateiwahl"><input type="file" id="fDatei"><span id="fDateiText">Datenbank wählen …</span></label>
+    <p class="anz" id="dbStand"></p>
+    <form id="fForm"><input type="text" name="username" value="BEAK" autocomplete="username" hidden><input type="password" id="fKennwort" placeholder="Kennwort" autocomplete="current-password" enterkeyhint="go"></form>
+    <button id="bOeffnen" class="pink gross">Öffnen</button>
+    <p id="startMeldung" class="meldung"></p>
+  </div>
+</section>
+
+<!-- Person (einmalig) -->
+<section id="v-person" class="ansicht" hidden>
+  <div class="karte start">
+    <h1>Wer bucht?</h1>
+    <p class="fix">Ihr Name wird einmal gespeichert und bei jeder Buchung mitgeschickt.</p>
+    <input type="text" id="fPerson" placeholder="Vor- und Nachname" autocomplete="name" enterkeyhint="done">
+    <input type="text" id="fGeraet" placeholder="Gerätename, z. B. iPad Lager" enterkeyhint="done">
+    <button id="bPerson" class="pink gross">Speichern</button>
+  </div>
+</section>
+
+<!-- Artikel-Datei -->
+<section id="v-artikel" class="ansicht" hidden>
+  <div class="split">
+    <div class="liste karte">
+      <input type="search" id="aSuche" placeholder="BEAK-Nr. oder Volltext (z. B. 2k2 1206)" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="treffer fix" id="aTrefferAnz"></div>
+      <ul id="aListe" class="ergebnis"></ul>
+    </div>
+    <div class="detail karte" id="aDetail"></div>
+  </div>
+</section>
+
+<!-- Stückliste -->
+<section id="v-stkl" class="ansicht" hidden>
+  <div class="karte">
+    <div class="stklkopf">
+      <input type="search" id="sSuche" placeholder="Stückliste: BEAK-Nr. oder Volltext" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="druckwahl">
+        <label class="fix">Anzahl / Art der Stückliste</label>
+        <div class="zeile">
+          <input type="number" id="sAnzahl" inputmode="decimal" min="0" step="any" value="1" class="anzahl">
+          <select id="sArt">
+            <option value="0">Interne Stückliste</option>
+            <option value="1">Lager - Stückliste (sortiert: SM1, SM2, Artikel-Bez)</option>
+            <option value="2">Lager - Stückliste (sortiert: Artikel-Bez)</option>
+            <option value="3">Lager - Stückliste (sortiert: Lagerort, SM1, SM2, Artikel-Bez)</option>
+            <option value="4">Lager - Stückliste Block (sortiert: Lagerort)</option>
+            <option value="5">Lager - Stückliste Block / Querformat (sortiert: Lagerort)</option>
+            <option value="6">Ersatzteil-Liste</option>
+            <option value="7">Kunden - Stückliste (sortiert: Beschreibung)</option>
+            <option value="8">Kunden - Stückliste (sortiert: Referenz)</option>
+            <option value="9">BOM-FULL-ENG</option>
+          </select>
+          <button id="sDruck" class="pink">Drucken</button>
+        </div>
+      </div>
+    </div>
+    <p id="sMeldung" class="meldung"></p>
+    <ul id="sListe" class="ergebnis klein"></ul>
+    <div id="sDetail"></div>
+  </div>
+</section>
+
+<!-- Artikel buchen (wie Windows "Artikel buchen", nur Interne Buchung) -->
+<section id="v-buchen" class="ansicht" hidden>
+  <div class="karte formular breit">
+    <h2 id="bTitel">Zu buchenden Artikel auswählen</h2>
+    <div class="feld"><label>Name:</label><span class="anz" id="bName"></span></div>
+    <div class="feld"><label>Modus</label><select id="bModus" disabled><option>Interne Buchung</option></select><span class="fix klein">Lieferanten-Zubuchung nur am PC</span></div>
+    <div class="feld"><label>Suche Artikel-Nr / Volltext-Suche</label><input type="search" id="bArtikel" placeholder="BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <ul id="bListe" class="ergebnis klein"></ul>
+    <div class="artzeile" id="bArtZeile">
+      <div><label>Artikel-Nr</label><span id="bNr"></span></div>
+      <div class="w2"><label>Artikel-Bezeichnung</label><span id="bBez"></span></div>
+      <div><label>SYS-Bestand</label><span id="bSys"></span></div>
+      <div class="w2"><label>Lagerort</label><span id="bLo"></span></div>
+    </div>
+    <div class="feld"><label>Art der Buchung</label>
+      <select id="bArt"><option>Lager-Bestand</option><option>SYS- und Lager-Bestand</option><option>System-Bestand</option></select></div>
+    <div class="feld"><label>Buchung / Menge</label>
+      <div class="zeile"><select id="bVz" class="vz"><option value="+">(+) Buchung</option><option value="-">(-) Buchung</option><option value="I">(I) Inventur-Buchung</option></select>
+      <input type="number" id="bMenge" inputmode="decimal" min="0" step="any" value="0"></div></div>
+    <div class="anzbox" id="bInfo"></div>
+    <div class="feld"><label>K-Stelle:</label><select id="bKst"></select></div>
+    <div class="feld"><label>Buchungs- Bemerkung (60 Zeichen)</label><input type="text" id="bBem" maxlength="60"></div>
+    <button id="bBuchen" class="pink gross">Buchen</button>
+    <p id="bMeldung" class="meldung"></p>
+  </div>
+</section>
+
+<!-- Material-Entnahme (wie Windows) -->
+<section id="v-bg" class="ansicht" hidden>
+  <div class="karte">
+    <div class="me-kopf">
+      <div class="me-eingabe">
+        <div class="feld"><label>Anzahl:</label><input type="number" id="gAnzahl" inputmode="decimal" min="0" step="any" value="1" class="anzahl"></div>
+        <div class="feld"><label>Artikel:</label><input type="search" id="gBg" placeholder="Stückliste: BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+        <ul id="gListe" class="ergebnis klein"></ul>
+        <div class="feld"><label>Bezeichn:</label><span class="anz" id="gBez"></span></div>
+        <div class="feld"><label>KST:</label><select id="gKst"></select></div>
+        <div class="feld"><label>Buchungs-Bemerkung (60 Zeichen)</label><input type="text" id="gBem" maxlength="60"></div>
+        <button id="gAnfuegen" class="pink">Artikel anfügen</button>
+      </div>
+      <div class="me-seite">
+        <label class="fix">Auswahl Modus</label>
+        <button id="gModusNeu" class="modus an">Neue Material-Entnahme</button>
+        <button id="gModusGebucht" class="modus">Gebuchte Material-Entnahme</button>
+        <button disabled title="Folgt">Aktuelle Buchungs-Liste ausdrucken</button>
+        <button id="gBuchen" class="pink">Aktuelle Liste buchen</button>
+        <button id="gLoeschen">Aktuelle Liste löschen</button>
+      </div>
+    </div>
+    <p id="gMeldung" class="meldung"></p>
+    <div id="gTabelle" class="tabelle"></div>
+  </div>
+</section>
+
+<!-- Einstellungen / Info -->
+<section id="v-info" class="ansicht" hidden>
+  <div class="karte formular">
+    <h2>Einstellungen</h2>
+    <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button></div>
+    <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span></div>
+    <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
+    <div class="feld"><label>Speichern</label><span class="fix" id="iModus"></span></div>
+    <h3>Gesendete Buchungen (dieses Gerät)</h3>
+    <p class="fix klein">Der Bestand in der iPad-Datenbank ändert sich erst mit der nächsten „iCloud Datenbank erzeugen“ am PC.</p>
+    <ul id="iJournal" class="journal"></ul>
+    <div class="zeile"><button id="iSperren">Sperren</button><button id="iNeueDb">Andere Datenbank laden</button></div>
+  </div>
+</section>
+</main>
+
+<!-- Bestätigung nach dem Buchen -->
+<div id="dlg" class="dlg" hidden><div class="karte">
+  <h2 id="dlgTitel"></h2><p id="dlgText" class="fix"></p>
+  <div class="zeile rechts"><button id="dlgTeilen" class="pink" hidden>In Dateien sichern …</button><button id="dlgOk">OK</button></div>
+</div></div>
+
+<script src="suche.js"></script>
+<script src="stkllayout.js"></script>
+<script src="pdfbreiten.js"></script>
+<script src="stkldruck.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
