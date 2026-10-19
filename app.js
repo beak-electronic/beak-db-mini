@@ -142,8 +142,8 @@ function artikelZeigen(a) {
       <div class="wert breit bem zu" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
     </div>
     <div class="unten">
-      <div><h3>Letzte Buchungen</h3>${bu ? `<table><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}
-        <div class="aktionen mt"><button class="pink" id="aBuchen">Artikel buchen</button>${DB.bg[a.n] ? '<button id="aStkl">Stückliste</button><button id="aBg">Material-Entnahme</button>' : ''}</div></div>
+      <div><h3>Letzte Buchungen</h3>${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}
+        <div class="aktionen mt"><button class="pink" id="aBuchen">Diesen Artikel buchen</button>${DB.bg[a.n] ? '<button id="aStkl">Stückliste</button><button id="aBg">Material-Entnahme</button>' : ''}</div></div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
     </div>`;
   $('#aBuchen').onclick = () => { buchenArtikel(a); zeige('buchen'); };

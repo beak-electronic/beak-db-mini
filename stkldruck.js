@@ -87,6 +87,7 @@ var BeakStklDruck = (function () {
     const linie = (x0, y0, x1, y1, w = 0.5, g = 0) => o.push(`${farbe(g)} ${f(w)} w ${f(x0)} ${f(H - y0)} m ${f(x1)} ${f(H - y1)} l S`);
     const HL = (x0, x1, y, w, g) => linie(x0, y, x1, y, w, g), VL = (x, y0, y1, w, g) => linie(x, y0, x, y1, w, g);
     const rect = (x0, y0, x1, y1, w, g) => o.push(`${farbe(g)} ${f(w)} w ${f(x0)} ${f(H - y1)} ${f(x1 - x0)} ${f(y1 - y0)} re S`);
+    const v = l.versatz || 0; o.push('q'); if (v) o.push(`1 0 0 1 ${f(v)} ${f(-v)} cm`);   // Rand links/oben (Block quer), Seite = Inhalt + 2 × Rand
     o.push('0 g');
     rect(l.frameL, l.frameTop, l.frameR, l.kopfY0, 0.5, 0x90 / 255);
     T(l.titel, l.titelX, l.titelY, l.titelSchrift, true);
@@ -126,6 +127,7 @@ var BeakStklDruck = (function () {
     T('Gedruckt von ' + a.bearbeiter, l.frameL + 6, fy, l.fussSchrift, true);
     T('BEAK electronic', l.fussBeakX, fy, l.fussSchrift, true);
     T(`Seite ${seite + 1} von ${anzahlSeiten}`, l.frameR - 5, fy, l.fussSchrift, true, 'R');
+    o.push('Q');
     return o.join('\n');
   }
   function pdf(a) {

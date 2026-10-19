@@ -166,3 +166,6 @@ input, select, textarea { font-size:16px; }   /* verhindert Auto-Zoom beim Antip
 .wert.bem.zu span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
 .wert.bem.lang.zu label::after { content:"  … mehr (antippen)"; font-weight:400; color:var(--pink); font-size:12px; }
 .wert.bem.lang:not(.zu) label::after { content:"  weniger"; font-weight:400; color:var(--pink); font-size:12px; }
+/* v80: kein Strich unter der letzten Buchung */
+.unten table.letzte tbody tr:last-child td { border-bottom:0 !important; }
+.unten table.letzte { border-bottom:0 !important; }
