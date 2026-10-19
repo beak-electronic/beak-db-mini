@@ -291,9 +291,9 @@ function gTabelle() {
   if (!gModusNeu) return gJournal();
   const z = gListe.flatMap(b => b.positionen.map(p => ({ ...p, kst: b.kstNr, bem: b.bemerkung })));
   $('#gTabelle').innerHTML = z.length ? `<table><thead><tr><th class="r">Artikel-Nr</th><th>Buchen</th><th>Artikel-Bezeichnung</th><th>Lagerort</th><th>Lagerplatz</th><th>Bauform</th><th class="r">VPE</th>
-    <th class="r">Aktueller Bestand</th><th class="r">Bedarf Stück</th><th class="r">Buchen Stück</th><th>KST</th><th>Bemerkung</th></tr></thead><tbody>${z.map(p => `<tr><td class="r w">${nrFmt(p.artikelNr)}</td>
+    <th class="r">Aktueller Bestand</th><th class="r">Bedarf Stück</th><th class="r">Buchen Stück</th><th>Bemerkung</th></tr></thead><tbody>${z.map(p => `<tr><td class="r w">${nrFmt(p.artikelNr)}</td>
     <td class="${p.buchen ? 'ja' : 'nein'}">${p.buchen ? 'JA' : 'NEIN'}</td><td>${esc(p.bez)}</td><td>${esc(p.lagerort)}</td><td>${esc(p.lagerplatz)}</td><td>${esc(p.bauform)}</td><td class="r">${p.vpe > 0 ? fmt.format(p.vpe) : ''}</td>
-    <td class="r">${fmt.format(p.bestand)}</td><td class="r">${fmt.format(p.bedarfStck)}</td><td class="r w">${fmt.format(p.buchenStck)}</td><td>${p.kst ?? ''}</td><td>${esc(p.bem)}</td></tr>`).join('')}</tbody></table>` : '<p class="fix klein">Aktuelle Liste ist leer.</p>';
+    <td class="r">${fmt.format(p.bestand)}</td><td class="r">${fmt.format(p.bedarfStck)}</td><td class="r w">${fmt.format(p.buchenStck)}</td><td>${esc(p.bem)}</td></tr>`).join('')}</tbody></table>` : '<p class="fix klein">Aktuelle Liste ist leer.</p>';
 }
 function gJournal() {
   const j = JSON.parse(ls.get('journal') || '[]').filter(x => x.me);
