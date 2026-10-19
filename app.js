@@ -183,7 +183,7 @@ function stklPdf() {
 }
 $('#sDruck').addEventListener('click', () => {
   const f = stklPdf(); if (!f) return;
-  if (istStandalone() && navigator.canShare?.({ files: [f] })) navigator.share({ files: [f], title: f.name }).catch(() => {});
+  if (istStandalone() && navigator.canShare?.({ files: [f] })) navigator.share({ files: [f] }).catch(() => {});
   else { const u = URL.createObjectURL(f); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 120000); }
 });
 
@@ -329,7 +329,7 @@ function buchungSpeichern(teil, text, me) {
   letzteDatei = file;
   const j = JSON.parse(ls.get('journal') || '[]'); j.unshift({ guid, name, zeit: d.toLocaleString('de-DE'), text, me: !!me }); ls.set('journal', JSON.stringify(j.slice(0, 200)));
   let weg;
-  if (istStandalone() && navigator.canShare?.({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(() => {}); weg = 'Bitte im Teilen-Menü „In Dateien sichern“ → iCloud Drive/BEAK/Buchungen wählen.'; }
+  if (istStandalone() && navigator.canShare?.({ files: [file] })) { navigator.share({ files: [file] }).catch(() => {}); weg = 'Bitte im Teilen-Menü „In Dateien sichern“ → iCloud Drive/BEAK/Buchungen wählen.'; }
   else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); weg = 'Die Datei wird in den Safari-Download-Ordner (iCloud Drive/BEAK/Buchungen) geladen.'; }
   dialog('Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungen vom iPad vorhanden!“, sobald iCloud die Datei synchronisiert hat.`, !!navigator.canShare?.({ files: [file] }));
 }
