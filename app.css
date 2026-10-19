@@ -156,3 +156,8 @@ select.vz.lang { width:0; flex:1 1 auto; min-width:0; }
 /* v75: Einstellungen-Symbol Schieberegler (Variante C) */
 .tab.icon { display:inline-flex; align-items:center; justify-content:center; }
 .tab.icon svg { display:block; }
+/* v77: Kopfleiste immer fest oben, kein Zoomen (iOS ignoriert user-scalable → zusätzlich per CSS/JS) */
+header#kopf { position:fixed; top:0; left:0; right:0; }
+main { padding-top:calc(var(--kopfh, 60px) + 12px); }
+html, body { touch-action: manipulation; overscroll-behavior: none; }
+input, select, textarea { font-size:16px; }   /* verhindert Auto-Zoom beim Antippen */

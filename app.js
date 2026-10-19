@@ -365,3 +365,10 @@ startVorbereiten();
   el.addEventListener('mouseup', e => { if (frisch) { e.preventDefault(); frisch = false; } });
   el.addEventListener('touchend', () => { if (frisch) setTimeout(() => { try { el.setSelectionRange(0, el.value.length); } catch {} frisch = false; }, 0); });
 });
+
+/* v77: Zoomen deaktivieren (Pinch + Doppeltipp) und Platz unter der fixierten Kopfleiste freihalten */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+/* Doppeltipp-Zoom: per CSS touch-action: manipulation (blockiert keine schnellen Tipps) */
+(() => { const k = document.getElementById('kopf'); if (!k) return; const setz = () => document.documentElement.style.setProperty('--kopfh', k.offsetHeight + 'px');
+  setz(); new ResizeObserver(setz).observe(k); addEventListener('orientationchange', () => setTimeout(setz, 300)); })();
