@@ -357,3 +357,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) verst
 if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (!isSecureContext || !crypto.subtle) { $('#startMeldung').textContent = 'Diese Seite muss über https geöffnet werden (Verschlüsselung).'; $('#startMeldung').classList.add('fehler'); }
 startVorbereiten();
+
+/* v76: Mengen-/Anzahl-Feld antippen → Inhalt (z. B. „0“) markieren, damit direkt überschrieben wird (iOS-sicher) */
+['#bMenge', '#qMenge', '#gAnzahl', '#sAnzahl'].forEach(id => {
+  const el = $(id); if (!el) return; let frisch = false;
+  el.addEventListener('focus', () => { frisch = true; setTimeout(() => { try { el.setSelectionRange(0, el.value.length); } catch { el.select(); } }, 0); });
+  el.addEventListener('mouseup', e => { if (frisch) { e.preventDefault(); frisch = false; } });
+  el.addEventListener('touchend', () => { if (frisch) setTimeout(() => { try { el.setSelectionRange(0, el.value.length); } catch {} frisch = false; }, 0); });
+});

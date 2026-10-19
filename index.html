@@ -75,7 +75,7 @@
       <div class="druckwahl">
         <label class="fix">Anzahl / Art der Stückliste</label>
         <div class="zeile">
-          <input type="number" id="sAnzahl" inputmode="decimal" min="0" step="any" value="1" class="anzahl">
+          <input type="text" id="sAnzahl" inputmode="decimal" autocomplete="off" value="1" class="zahl anzahl">
           <select id="sArt">
             <option value="0">Interne Stückliste</option>
             <option value="1">Lager - Stückliste (sortiert: SM1, SM2, Artikel-Bez)</option>
@@ -116,9 +116,9 @@
       <select id="bArt"><option>Lager-Bestand</option><option>SYS- und Lager-Bestand</option><option>System-Bestand</option></select></div>
     <div class="feld"><label>Buchung / Menge</label>
       <div class="zeile"><select id="bVz" class="vz"><option value="+">(+) Buchung</option><option value="-">(-) Buchung</option><option value="I">(I) Inventur-Buchung</option></select>
-      <input type="number" id="bMenge" inputmode="decimal" min="0" step="any" value="0"></div></div>
+      <input type="text" id="bMenge" inputmode="decimal" autocomplete="off" class="zahl" value="0"></div></div>
     <div class="anzbox" id="bInfo"></div>
-    <div class="feld"><label>K-Stelle:</label><select id="bKst"></select></div>
+    <div class="feld" hidden><label>K-Stelle:</label><select id="bKst"></select></div>
     <div class="feld"><label>Buchungs- Bemerkung (60 Zeichen)</label><input type="text" id="bBem" maxlength="60"></div>
     <button id="bBuchen" class="pink gross">Buchen</button>
     <p id="bMeldung" class="meldung"></p>
@@ -151,9 +151,9 @@
           <option value="MinusNichtVeraendert" data-z="-">- (-) Buchung (Artikelmengen in Unter-BG werden nicht verändert)</option>
           <option value="Inventur" data-z="I">I (I) Inventur (Artikelmengen in Unter-BG werden nicht verändert)</option>
         </select>
-        <input type="number" id="qMenge" inputmode="decimal" min="0" step="any" value="0"></div></div>
+        <input type="text" id="qMenge" inputmode="decimal" autocomplete="off" class="zahl" value="0"></div></div>
       <div class="anzbox" id="qInfo"></div>
-      <div class="feld"><label>K-Stelle:</label><select id="qKst"></select></div>
+      <div class="feld" hidden><label>K-Stelle:</label><select id="qKst"></select></div>
       <div class="feld"><label>Buchungs- Bemerkung (60 Zeichen)</label><input type="text" id="qBem" maxlength="60"></div>
       <button id="qBuchen" class="pink gross">Buchen</button>
       <p id="qMeldung" class="meldung"></p>
@@ -171,7 +171,7 @@
   <div class="karte">
     <div class="me-kopf">
       <div class="me-eingabe">
-        <div class="feld"><label>Anzahl:</label><input type="number" id="gAnzahl" inputmode="decimal" min="0" step="any" value="1" class="anzahl"></div>
+        <div class="feld"><label>Anzahl:</label><input type="text" id="gAnzahl" inputmode="decimal" autocomplete="off" value="1" class="zahl anzahl"></div>
         <div class="feld"><label>Artikel:</label><input type="search" id="gBg" placeholder="Stückliste: BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
         <ul id="gListe" class="ergebnis klein"></ul>
         <div class="feld"><label>Bezeichn:</label><span class="anz" id="gBez"></span></div>
