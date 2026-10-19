@@ -161,3 +161,8 @@ header#kopf { position:fixed; top:0; left:0; right:0; }
 main { padding-top:calc(var(--kopfh, 60px) + 12px); }
 html, body { touch-action: manipulation; overscroll-behavior: none; }
 input, select, textarea { font-size:16px; }   /* verhindert Auto-Zoom beim Antippen */
+/* v79: Bemerkung gekürzt auf 3 Zeilen, Antippen zeigt alles */
+.wert.bem { cursor:pointer; }
+.wert.bem.zu span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
+.wert.bem.lang.zu label::after { content:"  … mehr (antippen)"; font-weight:400; color:var(--pink); font-size:12px; }
+.wert.bem.lang:not(.zu) label::after { content:"  weniger"; font-weight:400; color:var(--pink); font-size:12px; }

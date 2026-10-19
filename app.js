@@ -139,7 +139,7 @@ function artikelZeigen(a) {
     <div class="werte">${W('Typ', a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
     <div class="bemlief einspaltig">
-      <div class="wert breit bem"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
+      <div class="wert breit bem zu" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
     </div>
     <div class="unten">
       <div><h3>Letzte Buchungen</h3>${bu ? `<table><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}
@@ -372,3 +372,9 @@ document.addEventListener('touchmove', e => { if (e.touches && e.touches.length 
 /* Doppeltipp-Zoom: per CSS touch-action: manipulation (blockiert keine schnellen Tipps) */
 (() => { const k = document.getElementById('kopf'); if (!k) return; const setz = () => document.documentElement.style.setProperty('--kopfh', k.offsetHeight + 'px');
   setz(); new ResizeObserver(setz).observe(k); addEventListener('orientationchange', () => setTimeout(setz, 300)); })();
+
+/* v79: Bemerkung zuerst gekürzt (Artikel-Datei passt mit Foto auf den Bildschirm), Antippen klappt auf/zu */
+document.addEventListener('click', e => { const b = e.target.closest('.wert.bem'); if (b) b.classList.toggle('zu'); });
+const bemPruefen = () => document.querySelectorAll('.wert.bem').forEach(b => { const s = b.querySelector('span'); if (!s) return;
+  const war = b.classList.contains('zu'); b.classList.add('zu'); b.classList.toggle('lang', s.scrollHeight > s.clientHeight + 2); if (!war) b.classList.remove('zu'); });
+new MutationObserver(() => requestAnimationFrame(bemPruefen)).observe(document.body, { childList: true, subtree: true });
