@@ -29,6 +29,12 @@
     <button data-v="info" class="tab icon" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
   </nav>
 </header>
+<!-- v81: Hinweis auf neue Datenbank (Antippen von „jetzt laden“ öffnet die Dateiauswahl; iOS erlaubt kein automatisches Nachladen) -->
+<div id="neuDb" class="neudb" hidden role="status">
+  <span class="txt"><b>Neue Datenbankversion verfügbar?</b> – <span id="neuDbStand" class="klein"></span></span>
+  <label class="knopf pink"><input type="file" id="neuDbDatei">jetzt laden</label>
+  <button id="neuDbZu" class="klein" aria-label="Hinweis schließen">×</button>
+</div>
 
 <main>
 <!-- Start / Entsperren -->
@@ -195,6 +201,7 @@
     <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button></div>
     <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span></div>
     <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
+    <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>
     <div class="feld"><label>Speichern</label><span class="fix" id="iModus"></span></div>
     <h3>Gesendete Buchungen (dieses Gerät)</h3>
     <p class="fix klein">Der Bestand in der iPad-Datenbank ändert sich erst mit der nächsten „iCloud Datenbank erzeugen“ am PC.</p>

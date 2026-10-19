@@ -169,3 +169,32 @@ input, select, textarea { font-size:16px; }   /* verhindert Auto-Zoom beim Antip
 /* v80: kein Strich unter der letzten Buchung */
 .unten table.letzte tbody tr:last-child td { border-bottom:0 !important; }
 .unten table.letzte { border-bottom:0 !important; }
+/* v81: Hinweis „Neue Datenbankversion verfügbar?“ – fest unter der Kopfleiste, Inhalt rückt um --bannerh nach unten */
+.neudb { position:fixed; left:0; right:0; top:var(--kopfh, 60px); z-index:4; display:flex; align-items:center; gap:10px; padding:6px 12px;
+  background:var(--soft); border-bottom:2px solid var(--pink); color:var(--fix); font-size:15px; }
+.neudb.alt { background:#FFE3EF; }
+.neudb .txt { flex:1; min-width:0; }
+.neudb .knopf { position:relative; display:inline-flex; align-items:center; min-height:40px; padding:0 16px; border-radius:10px; font-weight:700; white-space:nowrap; }
+.neudb .knopf.pink { background:var(--pink); color:#fff; }
+.neudb .knopf input { position:absolute; inset:0; opacity:0; min-height:0; width:100%; }
+.neudb button { min-height:40px; min-width:40px; padding:0; font-size:20px; }
+main { padding-top:calc(var(--kopfh, 60px) + var(--bannerh, 0px) + 12px); }
+/* v81: Material-Entnahme – Buchen JA/NEIN antippbar */
+td.buchen { cursor:pointer; padding:3px 4px !important; }
+td.buchen .jn { display:inline-block; min-width:54px; min-height:30px; line-height:28px; text-align:center; border-radius:8px; font-weight:800; border:1px solid var(--pink); }
+td.buchen.ja .jn { background:var(--pink); color:#fff; }
+td.buchen.nein .jn { background:#fff; color:#666; border:1px dashed #888; text-decoration:line-through; }
+tr.aus td { color:#9A9A9A; } tr.aus td.w { color:#B98AA0; }
+/* v81: Artikel-Datei – Detail passt immer auf den Bildschirm (kein Scrollen), das Foto nimmt die Resthöhe */
+.split { height:calc(100dvh - var(--kopfh, 60px) - var(--bannerh, 0px) - 24px - env(safe-area-inset-bottom)); }
+.detail { overflow:hidden; }
+.detail .unten { flex:1 1 0; min-height:0; margin-top:0; grid-template-rows:minmax(0,1fr); align-items:stretch; }
+.detail .unten > div:first-child { min-height:0; overflow:auto; display:flex; flex-direction:column; }
+.detail .unten > div:first-child .aktionen { margin-top:auto; padding-top:8px; }
+.detail .bild { height:100%; width:auto; aspect-ratio:4 / 3; min-height:110px; max-width:min(42vw, 380px); align-self:end; }
+.werte .wert.lieflist span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; }
+.werte .wert.lieflist.auf span { display:block; }
+@media (max-width: 900px), (orientation: portrait) {
+  .split { grid-template-columns:1fr; grid-template-rows:minmax(150px, 26%) minmax(0,1fr); }
+  .detail { overflow:hidden; }
+}

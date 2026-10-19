@@ -18,6 +18,10 @@ let ART = new Map();    // Nr → Artikel
 let BGLISTE = [];       // Artikel mit Stückliste
 let BGTYP = [];         // Baugruppen (Typ > 1) für BG buchen – wie Windows
 const bildUrl = new Map();
+/** v81: Datenbank-Stand – „erstellt“ (ISO mit Zeitzone, ab BEAK Datenbank 0.4.2), sonst „erzeugt“ (yyyy-MM-dd HH:mm). */
+function dbStandDatum(m) { const t = m?.erstellt || (m?.erzeugt ? m.erzeugt.replace(' ', 'T') : null); const d = t ? new Date(t) : null; return d && !isNaN(d) ? d : null; }
+function dbStandText(m) { const d = dbStandDatum(m); return d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : (m?.erzeugt || '–'); }
+function dbAlterText(d) { if (!d) return ''; const h = (Date.now() - d) / 36e5; return h < 1 ? 'vor ' + Math.max(1, Math.round(h * 60)) + ' Min.' : h < 48 ? 'vor ' + Math.round(h) + ' Std.' : 'vor ' + Math.round(h / 24) + ' Tagen'; }
 
 // ---------- IndexedDB: verschlüsselte Datei zwischenspeichern ----------
 function idb() { return new Promise((ok, f) => { const r = indexedDB.open('beak-db-mini', 1); r.onupgradeneeded = () => r.result.createObjectStore('db'); r.onsuccess = () => ok(r.result); r.onerror = () => f(r.error); }); }
@@ -74,7 +78,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => zeige(t.dataset.v)));
 let datei = null;   // ArrayBuffer der gewählten (noch verschlüsselten) Datei
 async function startVorbereiten() {
   const c = await idbGet().catch(() => null);
-  if (c) { datei = c.bytes; $('#fDateiText').textContent = 'Andere Datenbank wählen …'; $('#dbStand').textContent = `Gespeichert: ${c.name} (${(c.size / 1048576).toFixed(1)} MB, geladen ${c.geladen})`; }
+  if (c) { datei = c.bytes; $('#fDateiText').textContent = 'Andere Datenbank wählen …'; $('#dbStand').textContent = `Gespeichert: ${c.name} (${(c.size / 1048576).toFixed(1)} MB, geladen ${c.geladen})${c.stand ? ` · DB-Stand ${c.stand}` : ''}`; }
   zeige('start'); setTimeout(() => $('#fKennwort').focus(), 50);
 }
 $('#fDatei').addEventListener('change', async e => {
@@ -93,7 +97,8 @@ async function oeffnen() {
     const { modell, bilder } = await entschluesseln(datei, pw);
     if (modell.format !== 'BEAK-iPad-DB') throw new Error('Unbekanntes Datenformat.');
     laden(modell, bilder);
-    if (datei._name) await idbPut({ bytes: datei, name: datei._name, size: datei.byteLength, geladen: new Date().toLocaleString('de-DE') }).catch(() => {});
+    if (datei._name) await idbPut({ bytes: datei, name: datei._name, size: datei.byteLength, geladen: new Date().toLocaleString('de-DE'), stand: dbStandText(modell) }).catch(() => {});
+    bannerAus(); setTimeout(() => neuDbPruefen('alter'), 400);
     navigator.storage?.persist?.().catch(() => {});      // Safari soll den Zwischenspeicher nicht räumen
     $('#fKennwort').value = ''; m.textContent = '';
     if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'iPad'; $('#fPerson').focus(); }
@@ -273,9 +278,13 @@ function bgWaehlen(a) { gBg = a; $('#gBg').value = String(a.n); $('#gListe').inn
 $('#gBg').addEventListener('input', () => { gBg = null; $('#gBez').textContent = ''; liste($('#gListe'), suche($('#gBg').value, true).slice(0, 40), null, bgWaehlen); });
 $('#gAnzahl').addEventListener('input', gBemVorbelegen);
 /** wie AdoArtikelRepository.MaterialEntnahmePositionen: Positionen mit BC, Buchen = Auswahl_MaterialEntnahme, Bedarf = MArt × Anzahl, sortiert nach Artikel-Nr. */
+/** v81: Auswahl Buchen JA/NEIN je BG + Artikel auf diesem iPad merken (wie Windows Auswahl_MaterialEntnahme je Stücklisten-Position). */
+const meWahl = () => JSON.parse(ls.get('meAuswahl') || '{}');
+function meWahlSetzen(bg, nr, ja) { const w = meWahl(); (w[bg] ||= {})[nr] = ja ? 1 : 2; ls.set('meAuswahl', JSON.stringify(w)); }
 function mePositionen(bg, anzahl) {
+  const wahl = meWahl()[bg.n] || {};
   return (DB.bg[bg.n] || []).filter(p => p[3] && ART.has(p[0])).map(p => { const a = ART.get(p[0]); return { bg: bg.n, artikelNr: a.n, bez: a.b || '', lagerort: a.lo || '', lagerplatz: `${a.lot || ''} ${a.lp || ''}`.trim(),
-    bauform: a.bf || '', vpe: a.vpe || 0, bestand: a.ist || 0, bedarfStck: p[1] * anzahl, buchenStck: p[1] * anzahl, buchen: p[3] === 1 }; })
+    bauform: a.bf || '', vpe: a.vpe || 0, bestand: a.ist || 0, bedarfStck: p[1] * anzahl, buchenStck: p[1] * anzahl, buchen: wahl[a.n] ? wahl[a.n] === 1 : p[3] === 1 }; })
     .sort((x, y) => x.artikelNr - y.artikelNr || (x.bez < y.bez ? -1 : x.bez > y.bez ? 1 : 0));
 }
 $('#gAnfuegen').addEventListener('click', () => {
@@ -289,12 +298,20 @@ $('#gAnfuegen').addEventListener('click', () => {
 });
 function gTabelle() {
   if (!gModusNeu) return gJournal();
-  const z = gListe.flatMap(b => b.positionen.map(p => ({ ...p, kst: b.kstNr, bem: b.bemerkung })));
+  const z = gListe.flatMap((b, bi) => b.positionen.map((p, pi) => ({ ...p, kst: b.kstNr, bem: b.bemerkung, bi, pi })));
   $('#gTabelle').innerHTML = z.length ? `<table><thead><tr><th class="r">Artikel-Nr</th><th>Buchen</th><th>Artikel-Bezeichnung</th><th>Lagerort</th><th>Lagerplatz</th><th>Bauform</th><th class="r">VPE</th>
-    <th class="r">Aktueller Bestand</th><th class="r">Bedarf Stück</th><th class="r">Buchen Stück</th><th>Bemerkung</th></tr></thead><tbody>${z.map(p => `<tr><td class="r w">${nrFmt(p.artikelNr)}</td>
-    <td class="${p.buchen ? 'ja' : 'nein'}">${p.buchen ? 'JA' : 'NEIN'}</td><td>${esc(p.bez)}</td><td>${esc(p.lagerort)}</td><td>${esc(p.lagerplatz)}</td><td>${esc(p.bauform)}</td><td class="r">${p.vpe > 0 ? fmt.format(p.vpe) : ''}</td>
+    <th class="r">Aktueller Bestand</th><th class="r">Bedarf Stück</th><th class="r">Buchen Stück</th><th>Bemerkung</th></tr></thead><tbody>${z.map(p => `<tr class="${p.buchen ? '' : 'aus'}"><td class="r w">${nrFmt(p.artikelNr)}</td>
+    <td class="buchen ${p.buchen ? 'ja' : 'nein'}" data-bi="${p.bi}" data-pi="${p.pi}" title="Antippen: JA ⇄ NEIN (NEIN = nicht aus dem Lager)"><span class="jn">${p.buchen ? 'JA' : 'NEIN'}</span></td><td>${esc(p.bez)}</td><td>${esc(p.lagerort)}</td><td>${esc(p.lagerplatz)}</td><td>${esc(p.bauform)}</td><td class="r">${p.vpe > 0 ? fmt.format(p.vpe) : ''}</td>
     <td class="r">${fmt.format(p.bestand)}</td><td class="r">${fmt.format(p.bedarfStck)}</td><td class="r w">${fmt.format(p.buchenStck)}</td><td>${esc(p.bem)}</td></tr>`).join('')}</tbody></table>` : '<p class="fix klein">Aktuelle Liste ist leer.</p>';
 }
+$('#gTabelle').addEventListener('click', e => {
+  const td = e.target.closest('td.buchen'); if (!td || !gModusNeu) return;
+  const b = gListe[+td.dataset.bi], p = b?.positionen[+td.dataset.pi]; if (!p) return;
+  p.buchen = !p.buchen; meWahlSetzen(b.bg, p.artikelNr, p.buchen);
+  const n = gListe.reduce((s, x) => s + x.positionen.filter(q => q.buchen).length, 0);
+  $('#gMeldung').className = 'meldung'; $('#gMeldung').textContent = `${nrFmt(p.artikelNr)}: Buchen ${p.buchen ? 'JA' : 'NEIN – wird nicht aus dem Lager gebucht'} (für BG ${nrFmt(b.bg)} gemerkt). ${n} Position(en) mit JA.`;
+  gTabelle();
+});
 function gJournal() {
   const j = JSON.parse(ls.get('journal') || '[]').filter(x => x.me);
   $('#gTabelle').innerHTML = j.length ? `<table><thead><tr><th>Gebucht am (iPad)</th><th>Inhalt</th><th>Datei</th></tr></thead><tbody>${j.map(x => `<tr><td>${esc(x.zeit)}</td><td>${esc(x.text)}</td><td class="klein">${esc(x.name)}</td></tr>`).join('')}</tbody></table>`
@@ -331,28 +348,31 @@ function buchungSpeichern(teil, text, me) {
   let weg;
   if (istStandalone() && navigator.canShare?.({ files: [file] })) { weg = 'Jetzt unten auf „In Dateien sichern …“ tippen und im Teilen-Menü „In Dateien sichern“ → iCloud Drive/BEAK/Buchungen wählen.'; }
   else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); weg = 'Die Datei wird in den Safari-Download-Ordner (iCloud Drive/BEAK/Buchungen) geladen.'; }
-  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchung erstellt – bitte sichern' : 'Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungen vom iPad vorhanden!“, sobald iCloud die Datei synchronisiert hat.`, !!navigator.canShare?.({ files: [file] }));
+  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchung erstellt – bitte sichern' : 'Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungen vom iPad vorhanden!“, sobald iCloud die Datei synchronisiert hat.\nDatenbank-Stand hier: ${dbStandText(DB)}`, !!navigator.canShare?.({ files: [file] }));
+  nachBuchung = true;
 }
+let nachBuchung = false;
 function dialog(titel, text, teilen) {
   $('#dlgTitel').textContent = titel; $('#dlgText').innerText = text; $('#dlgTeilen').hidden = !teilen; $('#dlg').hidden = false;
 }
-$('#dlgOk').addEventListener('click', () => $('#dlg').hidden = true);
+$('#dlgOk').addEventListener('click', () => { $('#dlg').hidden = true; if (nachBuchung) { nachBuchung = false; neuDbPruefen('buchung'); } });
 $('#dlgTeilen').addEventListener('click', () => letzteDatei && navigator.share({ files: [letzteDatei] }).catch(() => {}));
 
 // ---------- Einstellungen ----------
 function infoZeigen() {
   $('#iPerson').textContent = ls.get('person') || ''; $('#iGeraet').textContent = ls.get('geraet') || 'iPad';
-  $('#iDb').textContent = DB ? `Stand ${DB.erzeugt} · ${DB.quelle} · ${nrFmt(DB.a.length)} Artikel · Stückliste: ${nrFmt(Object.keys(DB.bg).length)} · ${nrFmt(DB.img.length)} Bilder` : '';
+  $('#iDb').textContent = DB ? `Stand ${dbStandText(DB)} (${dbAlterText(dbStandDatum(DB))}) · ${DB.quelle} · ${nrFmt(DB.a.length)} Artikel · Stückliste: ${nrFmt(Object.keys(DB.bg).length)} · ${nrFmt(DB.img.length)} Bilder` : '';
   $('#iModus').textContent = istStandalone() ? 'Home-Bildschirm-App: Buchungen über „Teilen → In Dateien sichern“' : 'Safari-Tab: Buchungen als Download (Download-Ordner in den Einstellungen auf iCloud Drive/BEAK/Buchungen stellen)';
   const j = JSON.parse(ls.get('journal') || '[]');
   $('#iJournal').innerHTML = j.length ? j.map(x => `<li><span class="anz">${esc(x.zeit)}</span> · ${esc(x.text)}<br><span class="klein">${esc(x.name)}</span></li>`).join('') : '<li class="fix">Noch keine Buchungen.</li>';
 }
 $('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'iPad'; zeige('person'); });
-$('#iSperren').addEventListener('click', () => { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; startVorbereiten(); });
+function sperren() { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; bannerAus(); }
+$('#iSperren').addEventListener('click', () => { sperren(); startVorbereiten(); });
 $('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#fDateiText').textContent = 'Datenbank wählen …'; $('#iSperren').click(); });
 // beim Verlassen/Ausblenden nach 15 Minuten automatisch sperren
 let versteckt = 0;
-document.addEventListener('visibilitychange', () => { if (document.hidden) versteckt = Date.now(); else if (DB && versteckt && Date.now() - versteckt > 15 * 60e3) $('#iSperren').click(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) versteckt = Date.now(); else if (DB && versteckt && Date.now() - versteckt > 15 * 60e3) $('#iSperren').click(); else if (DB) neuDbPruefen('vordergrund'); });
 
 if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (!isSecureContext || !crypto.subtle) { $('#startMeldung').textContent = 'Diese Seite muss über https geöffnet werden (Verschlüsselung).'; $('#startMeldung').classList.add('fehler'); }
@@ -375,6 +395,37 @@ document.addEventListener('touchmove', e => { if (e.touches && e.touches.length 
 
 /* v79: Bemerkung zuerst gekürzt (Artikel-Datei passt mit Foto auf den Bildschirm), Antippen klappt auf/zu */
 document.addEventListener('click', e => { const b = e.target.closest('.wert.bem'); if (b) b.classList.toggle('zu'); });
+document.addEventListener('click', e => { const l = e.target.closest('.wert.lieflist'); if (l) l.classList.toggle('auf'); });   // v81: lange Lieferanten-Liste antippen
 const bemPruefen = () => document.querySelectorAll('.wert.bem').forEach(b => { const s = b.querySelector('span'); if (!s) return;
   const war = b.classList.contains('zu'); b.classList.add('zu'); b.classList.toggle('lang', s.scrollHeight > s.clientHeight + 2); if (!war) b.classList.remove('zu'); });
 new MutationObserver(() => requestAnimationFrame(bemPruefen)).observe(document.body, { childList: true, subtree: true });
+
+/* v81: „Neue Datenbankversion verfügbar? – jetzt laden“. iOS/Safari erlaubt keinen dauerhaften Dateizugriff (kein File System Access API,
+ * kein showOpenFilePicker, keine gespeicherten Datei-Handles) – eine neue Version kann nur per Antippen über die Dateiauswahl gelesen werden.
+ * Darum: Hinweis beim Zurückkehren in die App, nach jeder gespeicherten Buchung und wenn die Datenbank älter als X Stunden ist. */
+const neuStd = () => { const v = parseFloat(ls.get('neuDbStunden')); return v > 0 ? v : 12; };
+let bannerZu = 0;
+function bannerAus() { $('#neuDb').hidden = true; document.documentElement.style.setProperty('--bannerh', '0px'); }
+function neuDbPruefen(grund) {
+  if (!DB) return;
+  const d = dbStandDatum(DB), alt = d && (Date.now() - d) / 36e5 > neuStd();
+  if (grund === 'alter' && !alt) return;
+  if (grund === 'alter' && Date.now() - bannerZu < 30 * 60e3) return;        // nach „Schließen“ 30 Min. Ruhe für den Alters-Hinweis
+  $('#neuDbStand').textContent = `DB-Stand ${dbStandText(DB)} (${dbAlterText(d)})${alt ? ` – älter als ${fmt.format(neuStd())} Std.` : ''}`;
+  $('#neuDb').classList.toggle('alt', !!alt); $('#neuDb').hidden = false;
+  requestAnimationFrame(() => document.documentElement.style.setProperty('--bannerh', $('#neuDb').offsetHeight + 'px'));
+}
+$('#neuDbZu').addEventListener('click', () => { bannerZu = Date.now(); bannerAus(); });
+$('#neuDbDatei').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const buf = await f.arrayBuffer(); buf._name = f.name;
+  sperren(); await startVorbereiten(); datei = buf;
+  $('#dbStand').textContent = `Neu gewählt: ${f.name} (${(f.size / 1048576).toFixed(1)} MB) – Kennwort eingeben und „Öffnen“`;
+  $('#fDateiText').textContent = 'Andere Datenbank wählen …';
+  const m = $('#startMeldung'); m.className = 'meldung'; m.textContent = '';
+});
+setInterval(() => neuDbPruefen('alter'), 10 * 60e3);
+$('#iNeuStd').value = String(neuStd()).replace('.', ',');
+$('#iNeuStd').addEventListener('change', () => { const v = parseFloat(String($('#iNeuStd').value).replace(',', '.')); if (v > 0) ls.set('neuDbStunden', String(v)); $('#iNeuStd').value = String(neuStd()).replace('.', ','); });
+$('#iNeuJetzt').addEventListener('click', () => neuDbPruefen('manuell'));
+(() => { const b = document.getElementById('neuDb'); new ResizeObserver(() => { if (!b.hidden) document.documentElement.style.setProperty('--bannerh', b.offsetHeight + 'px'); }).observe(b); })();
