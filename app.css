@@ -142,3 +142,11 @@ select.vz.lang { width:0; flex:1 1 auto; min-width:0; }
 .bgb-raster .feld > * { min-width:0; }
 @media (max-width: 900px) { .bgb-raster { grid-template-columns: minmax(0,1fr); } }
 @media (max-width: 900px) { .marke .logo { height:24px; } nav#tabs { gap:4px; } .tab { padding:0 8px; font-size:14px; } .tab.icon { padding:0 9px; } }
+/* v73: Hochformat – Logo kleiner, Logo + Buttons in einer Zeile */
+@media (orientation: portrait), (max-width: 900px) {
+  header#kopf { gap:10px; padding-left:10px; padding-right:10px; }
+  .marke .logo { height:16px; }
+  nav#tabs { flex-wrap:nowrap; gap:4px; }
+  .tab { padding:0 8px; font-size:14px; white-space:nowrap; }
+  .tab.icon { padding:0 8px; }
+}
