@@ -16,6 +16,7 @@ let DB = null;          // entschlüsseltes Modell
 let BILDER = null;      // Uint8Array mit allen Bildern
 let ART = new Map();    // Nr → Artikel
 let BGLISTE = [];       // Artikel mit Stückliste
+let BGTYP = [];         // Baugruppen (Typ > 1) für BG buchen – wie Windows
 const bildUrl = new Map();
 
 // ---------- IndexedDB: verschlüsselte Datei zwischenspeichern ----------
@@ -42,11 +43,11 @@ async function entschluesseln(buf, kennwort) {
 }
 
 function laden(modell, bilder) {
-  DB = modell; BILDER = bilder; ART = new Map(); BGLISTE = [];
+  DB = modell; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
   for (const u of bildUrl.values()) URL.revokeObjectURL(u); bildUrl.clear();
-  for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); }
+  for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) > 1) BGTYP.push(a); }
   const kst = '<option value="">&lt; Keine KST &gt;</option>' + (DB.kst || []).map(([n, b]) => `<option value="${n}">${n}  ${esc(b)}</option>`).join('');
-  $('#bKst').innerHTML = kst; $('#gKst').innerHTML = kst;
+  $('#bKst').innerHTML = kst; $('#gKst').innerHTML = kst; $('#qKst').innerHTML = kst;
 }
 // eine Suche für BEAK-Nr. und Volltext – identisch zur Artikel-Datei (suche.js)
 const suche = (text, nurBg) => BeakSuche.suche(nurBg ? BGLISTE : DB.a, text);
@@ -64,6 +65,7 @@ function zeige(v) {
   if (v === 'info') infoZeigen();
   if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
   if (v === 'bg') gTabelle();
+  if (v === 'bgbuchen') { $('#qName').textContent = ls.get('person') || ''; $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
   window.scrollTo(0, 0);
 }
 $$('.tab').forEach(t => t.addEventListener('click', () => zeige(t.dataset.v)));
@@ -126,7 +128,7 @@ const W = (l, v, cls = '') => `<div class="wert ${cls}"><label>${l}</label><span
 function artikelZeigen(a) {
   aktArt = a;
   $$('#aListe li').forEach(li => li.classList.toggle('an', +li.dataset.n === a.n));
-  const url = bild(a.i), s = a.s || [];
+  const url = bild(a.i);
   const z = x => x != null ? fmt.format(x) : '';
   const bu = (a.bu || []).map(([d, f, m, cs, sb, ci, bb, n, bem]) => `<tr><td>${esc(d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(2, 4) + ' ' + d.slice(11, 16) : '')}</td>
       <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td>${esc(n)}</td><td>${esc(bem)}</td></tr>`).join('');
@@ -134,9 +136,8 @@ function artikelZeigen(a) {
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}</div>
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
-    <div class="werte">${W('Kunden-Art.-Nr.', a.k)}${W('Typ', a.t)}${W('Lagerort', a.lo)}${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}
-      ${W('Bauform', a.bf)}${W('Hersteller', a.h)}${W('Einheit', a.e)}${W('VPE', a.vpe ? fmt.format(a.vpe) : '')}${W('EAN', a.ean)}
-      ${W('Sachmerkmal 1', s[0])}${W('Sachmerkmal 2', s[1])}${W('Sachmerkmal 3', s[2])}</div>
+    <div class="werte">${W('Artikel', a.ean)}${W('Typ', a.t)}${W('Lagerort', a.lo)}
+      ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Hersteller', a.h)}</div>
     <div class="bemlief">
       <div class="wert breit bem"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
       <div class="lief"><table><thead><tr><th>Lieferant</th></tr></thead><tbody>${(a.l || []).map(n => `<tr><td>${esc(Array.isArray(n) ? n[0] : n)}</td></tr>`).join('') || '<tr><td class="fix">–</td></tr>'}</tbody></table></div>
@@ -217,6 +218,55 @@ $('#bBuchen').addEventListener('click', () => {
   $('#bMenge').value = '0'; $('#bBem').value = ''; bSchritt();
 });
 
+// ---------- BG buchen (Windows "BG buchen": nur Baugruppen Typ > 1, Teile-Vorschau eine Ebene) ----------
+let qBg = null;
+const qVeraendert = o => o === 'PlusVeraendert' || o === 'MinusVeraendert';
+const qVorzeichen = o => o.startsWith('Plus') ? 1 : o === 'Inventur' ? 0 : -1;
+/** Name der Teile-Sätze wie Access/Windows (BgBuchung.TeileName): ohne führendes BG / SMD BG / SYSTEM, max. 30 Zeichen. */
+const qTeileName = b => (b || '').replace(/^\s*(SMD\s+BG|BG|SYSTEM)\s+/i, '').trim().slice(0, 30);
+/** wie BgBuchung.Vorschau: direkte Stücklisten-Positionen (gleiche Artikel zusammengefasst), Bedarf = Menge × Stückliste-Menge, nur System-Bestand. */
+function qTeile(bg, opt, menge) {
+  if (!bg || !qVeraendert(opt) || !(menge > 0)) return [];
+  const vz = -qVorzeichen(opt), sum = new Map();
+  for (const p of DB.bg[bg.n] || []) if (p[0] !== bg.n) sum.set(p[0], (sum.get(p[0]) || 0) + p[1]);
+  return [...sum.entries()].sort((x, y) => x[0] - y[0]).map(([nr, stk]) => { const a = ART.get(nr); const bedarf = Math.round(menge * stk * 1e4) / 1e4, alt = a?.sys ?? 0;
+    return { artikelNr: nr, bezeichnung: a?.b ?? '(unbekannt)', stklMenge: stk, bedarf, sysAlt: alt, sysNeu: Math.round((alt + vz * bedarf) * 1e4) / 1e4, fakt: vz > 0 ? '+' : '-', unterBg: (a?.t || 1) > 1 }; });
+}
+function qMenge() { return parseFloat(String($('#qMenge').value).replace(',', '.')) || 0; }
+function qVorschau() {
+  const opt = $('#qVz').value, m = qMenge(), t = qTeile(qBg, opt, m), npos = qBg ? new Set((DB.bg[qBg.n] || []).map(p => p[0])).size : 0;
+  $('#qTitel').textContent = !qBg ? 'Zu buchende Baugruppe auswählen' : m === 0 ? 'Menge eingeben' : 'Buchungs-Bemerkung eingeben / Buchen';
+  $('#qInfo').textContent = qBg ? $('#qVz').selectedOptions[0].text : '';
+  $('#qTabelle').innerHTML = t.length ? `<table><thead><tr><th class="r">Artikel</th><th>Bezeichnung</th><th></th><th class="r">Bedarf</th><th class="r">SYS-Bestand</th><th class="r">Neuer Bestand</th></tr></thead><tbody>${t.map(p =>
+    `<tr><td class="r">${nrFmt(p.artikelNr)}</td><td>${esc(p.bezeichnung)}${p.unterBg ? ' <span class="fix klein">(Unter-BG)</span>' : ''}</td><td>${p.fakt === '-' ? '−' : '+'}</td><td class="r w">${fmt.format(p.bedarf)}</td><td class="r">${fmt.format(p.sysAlt)}</td><td class="r w">${fmt.format(p.sysNeu)}</td></tr>`).join('')}</tbody></table>` : '';
+  $('#qVorschauText').textContent = !qBg ? 'Baugruppe auswählen.'
+    : !qVeraendert(opt) ? `Unter-BG werden nicht verändert – nur die Baugruppe wird gebucht (${npos} Stücklisten-Positionen bleiben unberührt).`
+    : m <= 0 ? `Menge eingeben – ${npos} direkte Stücklisten-Positionen werden ${qVorzeichen(opt) > 0 ? 'abgebucht' : 'zugebucht'} (nur eine Ebene).`
+    : `${t.length} Teile-Buchungen (System-Bestand, Code S, ${qVorzeichen(opt) > 0 ? 'abgebucht' : 'zugebucht'}), Name in Buchung: „${qTeileName(qBg.b)}“.`;
+  return t;
+}
+function qWaehlen(a) {
+  qBg = a; $('#qArtikel').value = String(a.n); $('#qListe').innerHTML = '';
+  $('#qNr').textContent = nrFmt(a.n); $('#qBez').textContent = a.b || ''; $('#qSys').textContent = fmt2(a.sys);
+  $('#qLo').textContent = [loBez(a), a.lot, a.lp].filter(Boolean).join(' · '); $('#qMeldung').textContent = ''; qVorschau();
+}
+$('#qArtikel').addEventListener('input', () => { qBg = null; ['#qNr', '#qBez', '#qSys', '#qLo'].forEach(x => $(x).textContent = ''); qVorschau();
+  liste($('#qListe'), BeakSuche.suche(BGTYP, $('#qArtikel').value).slice(0, 40), null, qWaehlen); });
+['#qVz', '#qMenge'].forEach(x => $(x).addEventListener('input', qVorschau));
+$('#qBuchen').addEventListener('click', () => {
+  const m = $('#qMeldung'); m.className = 'meldung fehler'; const menge = qMenge();
+  if (!qBg) { m.textContent = 'Bitte eine Baugruppe wählen.'; return; }
+  if (!(menge > 0)) { m.textContent = 'Bitte die Menge eingeben.'; return; }
+  const o = $('#qVz').selectedOptions[0], kst = $('#qKst').value, teile = qVorschau();
+  buchungSpeichern({ art: 'BG buchen', modus: 'Interne Buchung', artDerBuchung: $('#qArt').value, vorzeichen: o.dataset.z, vorzeichenText: o.text, bgOption: o.value,
+    artikelNr: qBg.n, bezeichnung: qBg.b, menge, kstNr: kst ? +kst : null, kstText: kst ? $('#qKst').selectedOptions[0].text : null,
+    lagerort: [loBez(qBg), qBg.lot, qBg.lp].filter(Boolean).join(' · ') || null, lagerortDetail: { bez: loBez(qBg) || null, kurz: qBg.lot || null, fach: qBg.lp || null },
+    bemerkung: $('#qBem').value.trim() || null, teileName: qVeraendert(o.value) ? qTeileName(qBg.b) : null,
+    teile: teile.map(t => ({ artikelNr: t.artikelNr, bezeichnung: t.bezeichnung, stklMenge: t.stklMenge, bedarf: t.bedarf, fakt: t.fakt, sysAlt: t.sysAlt, sysNeu: t.sysNeu })) },
+    `BG buchen: ${o.text} ${fmt.format(menge)} × ${nrFmt(qBg.n)} ${qBg.b} (${$('#qArt').value})${teile.length ? ` + ${teile.length} Teile-Buchungen` : ''}`);
+  $('#qMenge').value = '0'; $('#qBem').value = ''; qVorschau();
+});
+
 // ---------- Material-Entnahme ----------
 let gBg = null, gListe = [], gModusNeu = true;
 function gBemVorbelegen() { if (!gBg) return; const n = String($('#gAnzahl').value || ''); const t = `${n.replace('.', ',')} x ${gBg.b} (${nrFmt(gBg.n)})`; $('#gBem').value = t.slice(0, 60); }
@@ -243,7 +293,7 @@ function gTabelle() {
   const z = gListe.flatMap(b => b.positionen.map(p => ({ ...p, kst: b.kstNr, bem: b.bemerkung })));
   $('#gTabelle').innerHTML = z.length ? `<table><thead><tr><th class="r">Artikel-Nr</th><th>Buchen</th><th>Artikel-Bezeichnung</th><th>Lagerort</th><th>Lagerplatz</th><th>Bauform</th><th class="r">VPE</th>
     <th class="r">Aktueller Bestand</th><th class="r">Bedarf Stück</th><th class="r">Buchen Stück</th><th>KST</th><th>Bemerkung</th></tr></thead><tbody>${z.map(p => `<tr><td class="r w">${nrFmt(p.artikelNr)}</td>
-    <td class="${p.buchen ? 'ja' : 'nein'}">${p.buchen ? 'JA' : 'NEIN'}</td><td>${esc(p.bez)}</td><td>${esc(p.lagerort)}</td><td>${esc(p.lagerplatz)}</td><td>${esc(p.bauform)}</td><td class="r">${p.vpe ? nrFmt(p.vpe) : ''}</td>
+    <td class="${p.buchen ? 'ja' : 'nein'}">${p.buchen ? 'JA' : 'NEIN'}</td><td>${esc(p.bez)}</td><td>${esc(p.lagerort)}</td><td>${esc(p.lagerplatz)}</td><td>${esc(p.bauform)}</td><td class="r">${p.vpe > 0 ? fmt.format(p.vpe) : ''}</td>
     <td class="r">${fmt.format(p.bestand)}</td><td class="r">${fmt.format(p.bedarfStck)}</td><td class="r w">${fmt.format(p.buchenStck)}</td><td>${p.kst ?? ''}</td><td>${esc(p.bem)}</td></tr>`).join('')}</tbody></table>` : '<p class="fix klein">Aktuelle Liste ist leer.</p>';
 }
 function gJournal() {
@@ -299,7 +349,7 @@ function infoZeigen() {
   $('#iJournal').innerHTML = j.length ? j.map(x => `<li><span class="anz">${esc(x.zeit)}</span> · ${esc(x.text)}<br><span class="klein">${esc(x.name)}</span></li>`).join('') : '<li class="fix">Noch keine Buchungen.</li>';
 }
 $('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'iPad'; zeige('person'); });
-$('#iSperren').addEventListener('click', () => { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = null; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; startVorbereiten(); });
+$('#iSperren').addEventListener('click', () => { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; startVorbereiten(); });
 $('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#fDateiText').textContent = 'Datenbank wählen …'; $('#iSperren').click(); });
 // beim Verlassen/Ausblenden nach 15 Minuten automatisch sperren
 let versteckt = 0;

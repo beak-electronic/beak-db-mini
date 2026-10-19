@@ -52,7 +52,7 @@ ul.ergebnis.klein { max-height:240px; flex:none; margin:4px 0 8px; } ul.ergebnis
 .dkopf .nr { font-size:26px; font-weight:800; color:var(--pink); }
 .dkopf .bez { font-size:19px; font-weight:700; color:var(--fix); }
 .auslauf { background:#B00020; color:#fff; border-radius:6px; padding:1px 8px; font-size:13px; font-weight:700; }
-.werte { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:2px 14px; }
+.werte { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:2px 14px; }   /* 2 Zeilen à 3: Artikel, Typ, Lagerort / Lagerplatz, Bauform, Hersteller */
 .wert { display:flex; flex-direction:column; padding:2px 0; border-bottom:1px solid #F0F0F0; }
 .wert.breit span { font-weight:400; font-size:15px; }
 .wert label { font-size:12px; color:var(--fix); font-weight:600; text-transform:none; }
@@ -124,3 +124,21 @@ td.ja { color:var(--pink); font-weight:700; } td.nein { color:#888; font-weight:
 .wert.bem span { white-space:pre-wrap; max-height:9.5em; overflow:auto; }
 .bemlief .lief table { width:100%; }
 @media (max-width: 900px) { .bemlief { grid-template-columns: 1fr; } }
+.wert.bem { border-bottom:0; }
+.wert.bem label { display:block; font-size:13px; font-weight:700; color:var(--fix); border-bottom:2px solid var(--pink); padding:4px 5px; margin-bottom:4px; }   /* wie Kopf "Lieferant" */
+.wert.bem span { padding:0 5px; }
+
+/* BG buchen: Formular links, Vorschau rechts (hochkant untereinander) */
+.bgb-raster { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.05fr); gap:18px; align-items:start; }
+.bgb-raster .feld { grid-template-columns: 130px 1fr; }
+.bgb-raster .artzeile { grid-template-columns: 1fr 2fr; }
+.bgb-vorschau h3 { margin:4px 0 8px; }
+.bgb-vorschau .tabelle { max-height:560px; overflow:auto; }
+select.vz.lang { flex:1; min-width:0; }
+@media (max-width: 900px) { .bgb-raster { grid-template-columns: 1fr; } .bgb-vorschau .tabelle { max-height:none; } }
+select.vz.lang { width:auto; } select.vz.lang + input { flex:none; width:110px; }
+select.vz.lang { width:0; flex:1 1 auto; min-width:0; }
+.bgb-raster > * { min-width:0; }
+.bgb-raster .feld > * { min-width:0; }
+@media (max-width: 900px) { .bgb-raster { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 900px) { .marke .logo { height:24px; } nav#tabs { gap:4px; } .tab { padding:0 8px; font-size:14px; } .tab.icon { padding:0 9px; } }

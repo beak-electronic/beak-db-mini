@@ -24,6 +24,7 @@
     <button data-v="artikel" class="tab">Artikel-Datei</button>
     <button data-v="stkl" class="tab">Stückliste</button>
     <button data-v="buchen" class="tab">Artikel buchen</button>
+    <button data-v="bgbuchen" class="tab">BG buchen</button>
     <button data-v="bg" class="tab">Material-Entnahme</button>
     <button data-v="info" class="tab icon" title="Einstellungen">⚙</button>
   </nav>
@@ -121,6 +122,47 @@
     <div class="feld"><label>Buchungs- Bemerkung (60 Zeichen)</label><input type="text" id="bBem" maxlength="60"></div>
     <button id="bBuchen" class="pink gross">Buchen</button>
     <p id="bMeldung" class="meldung"></p>
+  </div>
+</section>
+
+<!-- BG buchen (wie Windows "BG buchen": nur Baugruppen, 5 Vorzeichen-Optionen, Vorschau der Teile-Buchungen eine Ebene) -->
+<section id="v-bgbuchen" class="ansicht" hidden>
+  <div class="karte bgb-raster">
+    <div class="bgb-form">
+      <h2 id="qTitel">Zu buchende Baugruppe auswählen</h2>
+      <div class="feld"><label>Name:</label><span class="anz" id="qName"></span></div>
+      <div class="feld"><label>Modus</label><select id="qModus" disabled><option>Interne Buchung</option></select></div>
+      <div class="feld"><label>Suche Artikel-Nr / Volltext-Suche</label><input type="search" id="qArtikel" placeholder="Baugruppe: BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <p class="fix klein" id="qAnzahl"></p>
+      <ul id="qListe" class="ergebnis klein"></ul>
+      <div class="artzeile">
+        <div><label>Artikel-Nr</label><span id="qNr"></span></div>
+        <div class="w2"><label>Artikel-Bezeichnung</label><span id="qBez"></span></div>
+        <div><label>SYS-Bestand</label><span id="qSys"></span></div>
+        <div class="w2"><label>Lagerort</label><span id="qLo"></span></div>
+      </div>
+      <div class="feld"><label>Art der Buchung</label>
+        <select id="qArt"><option>Lager-Bestand</option><option>SYS- und Lager-Bestand</option><option>System-Bestand</option></select></div>
+      <div class="feld"><label>Buchung / Menge</label>
+        <div class="zeile"><select id="qVz" class="vz lang">
+          <option value="PlusVeraendert" data-z="+">+ (+) Buchung (Artikelmengen in Unter-BG werden verändert)</option>
+          <option value="PlusNichtVeraendert" data-z="+">+ (+) Buchung (Artikelmengen in Unter-BG werden nicht verändert)</option>
+          <option value="MinusVeraendert" data-z="-">- (-) Buchung (Artikelmengen in Unter-BG werden verändert)</option>
+          <option value="MinusNichtVeraendert" data-z="-">- (-) Buchung (Artikelmengen in Unter-BG werden nicht verändert)</option>
+          <option value="Inventur" data-z="I">I (I) Inventur (Artikelmengen in Unter-BG werden nicht verändert)</option>
+        </select>
+        <input type="number" id="qMenge" inputmode="decimal" min="0" step="any" value="0"></div></div>
+      <div class="anzbox" id="qInfo"></div>
+      <div class="feld"><label>K-Stelle:</label><select id="qKst"></select></div>
+      <div class="feld"><label>Buchungs- Bemerkung (60 Zeichen)</label><input type="text" id="qBem" maxlength="60"></div>
+      <button id="qBuchen" class="pink gross">Buchen</button>
+      <p id="qMeldung" class="meldung"></p>
+    </div>
+    <div class="bgb-vorschau">
+      <h3>Vorschau Teile-Buchungen (Unter-BG, nur eine Ebene)</h3>
+      <div class="tabelle" id="qTabelle"></div>
+      <p class="fix klein" id="qVorschauText"></p>
+    </div>
   </div>
 </section>
 
