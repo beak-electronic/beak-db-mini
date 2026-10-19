@@ -136,7 +136,7 @@ function artikelZeigen(a) {
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}</div>
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
-    <div class="werte">${W('Artikel', a.ean)}${W('Typ', a.t)}${W('Lagerort', a.lo)}
+    <div class="werte">${W('Typ', a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Hersteller', a.h)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
     <div class="bemlief einspaltig">
       <div class="wert breit bem"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
