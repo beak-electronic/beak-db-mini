@@ -121,7 +121,7 @@ td.ja { color:var(--pink); font-weight:700; } td.nein { color:#888; font-weight:
 
 /* v69: Bemerkung mit Zeilenumbrüchen wie Windows, Lieferanten schmal rechts daneben */
 .bemlief { display:grid; grid-template-columns: minmax(0,1fr) 190px; gap:14px; align-items:start; margin-top:4px; }
-.wert.bem span { white-space:pre-wrap; max-height:9.5em; overflow:auto; }
+.wert.bem span { white-space:pre-wrap; overflow-wrap:anywhere; display:block; }   /* v72: immer komplett anzeigen, keine Höhenbegrenzung */
 .bemlief .lief table { width:100%; }
 @media (max-width: 900px) { .bemlief { grid-template-columns: 1fr; } }
 .wert.bem { border-bottom:0; }
