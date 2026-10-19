@@ -153,3 +153,6 @@ select.vz.lang { width:0; flex:1 1 auto; min-width:0; }
 /* v74: Lieferanten als Kommaliste bei den Werten, Bemerkung volle Breite */
 .bemlief.einspaltig { grid-template-columns: 1fr; }
 .werte .wert.lieflist { grid-column: 1 / -1; }
+/* v75: Einstellungen-Symbol Schieberegler (Variante C) */
+.tab.icon { display:inline-flex; align-items:center; justify-content:center; }
+.tab.icon svg { display:block; }
