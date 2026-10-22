@@ -170,7 +170,7 @@ function artikelZeigen(a) {
   const bu = (a.bu || []).map(([d, f, m, cs, sb, ci, bb, n, bem]) => `<tr><td>${esc(d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(2, 4) + ' ' + d.slice(11, 16) : '')}</td>
       <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td>${esc(n)}</td><td>${esc(bem)}</td></tr>`).join('');
   $('#aDetail').innerHTML = `
-    <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : ''; })()}</div>
+    <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : '<select class="instkl" disabled><option>In Stückliste (0)</option></select>'; })()}</div>
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}

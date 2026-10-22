@@ -28,13 +28,14 @@
     <button data-v="bg" class="tab">Material-Entnahme</button>
     <button data-v="info" class="tab icon" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
   </nav>
-</header>
-<!-- v81: Hinweis auf neue Datenbank (Antippen von „jetzt laden“ öffnet die Dateiauswahl; iOS erlaubt kein automatisches Nachladen) -->
 <div id="neuDb" class="neudb" hidden role="status">
   <span class="txt"><b>Neue Datenbankversion verfügbar?</b> – <span id="neuDbStand" class="klein"></span></span>
-  <label class="knopf pink"><input type="file" id="neuDbDatei">jetzt laden</label>
+  <label class="knopf pink"><input type="file" id="neuDbDatei" accept=".beakdb,application/octet-stream">jetzt laden</label>
   <button id="neuDbZu" class="klein" aria-label="Hinweis schließen">×</button>
 </div>
+</header>
+<!-- v81: Hinweis auf neue Datenbank (Antippen von „jetzt laden“ öffnet die Dateiauswahl; iOS erlaubt kein automatisches Nachladen) -->
+
 
 <main>
 <!-- Start / Entsperren -->
@@ -55,7 +56,7 @@
       <button id="wEinst" class="wbtn">Einstellungen</button>
     </div>
     <p id="startMeldung" class="meldung"></p>
-    <p class="wversion" id="wVersion">BEAK DB mini · V38</p>
+    <p class="wversion" id="wVersion">BEAK DB mini · V39</p>
   </div>
 </section>
 

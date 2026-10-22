@@ -292,3 +292,7 @@ ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; 
 /* v104: Bemerkung immer 3 Zeilen hoch -> nichts darunter verrutscht beim Artikelwechsel */
 .wert.bem.zu span { height:calc(3 * 1.3em); min-height:calc(3 * 1.3em); line-height:1.3em; }
 .wert span { min-height:1.3em; line-height:1.3em; }
+/* v105: Hinweis hängt direkt unter der Kopfleiste (im Kopf), kann nie verdeckt werden */
+header#kopf > .neudb { position:absolute; top:100%; left:0; right:0; z-index:4; }
+header#kopf > .neudb[hidden] { display:none; }
+.dkopf select.instkl:disabled { opacity:.55; }
