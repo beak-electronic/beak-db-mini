@@ -283,3 +283,6 @@ table mark { background:#fde2ef; color:var(--pink); font-weight:700; border-radi
 ul.ergebnis li { font-size:14px; align-items:baseline; }
 ul.ergebnis li .nr { min-width:58px; }
 ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25; }
+/* v102: Kopf gleich hoch mit/ohne "In Stückliste" */
+.dkopf { min-height:38px; align-content:flex-start; }
+.dkopf select.instkl { min-height:0; height:34px; padding-top:0; padding-bottom:0; margin-top:0; margin-bottom:0; align-self:flex-start; }
