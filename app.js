@@ -55,7 +55,7 @@ async function entschluesseln(buf, kennwort) {
 function laden(modell, bilder) {
   DB = modell; VERW = null; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
   for (const u of bildUrl.values()) URL.revokeObjectURL(u); bildUrl.clear();
-  for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) > 1) BGTYP.push(a); }
+  for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) === 2) BGTYP.push(a); }   // v98: am iPad nur Baugruppen (keine Fertiggeräte/Systeme)
   const kst = '<option value="">&lt; Keine KST &gt;</option>' + (DB.kst || []).map(([n, b]) => `<option value="${n}">${n}  ${esc(b)}</option>`).join('');
   $('#bKst').innerHTML = kst; $('#gKst').innerHTML = kst; $('#qKst').innerHTML = kst;
 }
@@ -71,7 +71,7 @@ function bild(i) {
 function zeige(v) {
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
-  $('#tabs').hidden = !DB || v === 'start' || v === 'person';
+  $('#tabs').hidden = !DB || v === 'start' || v === 'person'; tabsSetzen(v);
   if (v === 'info') { infoZeigen(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
   if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
   if (v === 'bg') gTabelle();
@@ -79,14 +79,18 @@ function zeige(v) {
   window.scrollTo(0, 0);
 }
 $$('.tab').forEach(t => t.addEventListener('click', () => { tabVorbelegen(t.dataset.v); zeige(t.dataset.v); }));
+// v98: oben nur die Reiter, die zum gewählten Artikel passen
+function tabsSetzen(v) { const a = aktArt, t = a ? (a.t || 1) : 0, stk = !!(a && DB && DB.bg[a.n]);
+  const zeig = { artikel: true, info: true, buchen: !!a && t <= 1, stkl: stk, bg: stk, bgbuchen: t === 2 };
+  $$('.tab').forEach(b => { const k = b.dataset.v; b.hidden = !(zeig[k] || k === v); }); }
 // v86: Tabs oben übernehmen den in der Artikel-Datei gewählten Artikel / die Baugruppe (wie die Buttons unten)
 function tabVorbelegen(v) {
-  if (!DB || !aktArt || $('#v-artikel').hidden) return;
+  if (!DB || !aktArt) return;
   const a = aktArt, istBg = !!DB.bg[a.n];
   try {
     if (v === 'stkl' && istBg) stklZeigen(a);
     else if (v === 'buchen') buchenArtikel(a);
-    else if (v === 'bgbuchen' && istBg) qWaehlen(a);
+    else if (v === 'bgbuchen' && (a.t || 1) === 2) qWaehlen(a);
     else if (v === 'bg' && istBg) { bgWaehlen(a); gModus(true); }
   } catch (e) { console.warn(e); }
 }
@@ -165,7 +169,7 @@ function artikelZeigen(a) {
   const bu = (a.bu || []).map(([d, f, m, cs, sb, ci, bb, n, bem]) => `<tr><td>${esc(d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(2, 4) + ' ' + d.slice(11, 16) : '')}</td>
       <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td>${esc(n)}</td><td>${esc(bem)}</td></tr>`).join('');
   $('#aDetail').innerHTML = `
-    <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}</div>
+    <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : ''; })()}</div>
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', a.t)}${W('Lagerort', a.lo)}
@@ -174,14 +178,12 @@ function artikelZeigen(a) {
       <div class="wert breit bem zu" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
     </div>
     <div class="unten">
-      <div><h3>Letzte Buchungen</h3>${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}
-        <div class="aktionen mt"><button class="pink" id="aBuchen">Diesen Artikel buchen</button>${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : ''; })()}${DB.bg[a.n] ? '<button id="aStkl">Stückliste</button><button id="aBg">Material-Entnahme</button>' : ''}</div></div>
+      <div><h3>Letzte Buchungen</h3>${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
     </div>`;
   fotoEinpassen(true);
-  $('#aBuchen').onclick = () => { buchenArtikel(a); zeige('buchen'); };
+  tabsSetzen('artikel');
   if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklZeigen(b); zeige('stkl'); } };
-  if (DB.bg[a.n]) { $('#aStkl').onclick = () => { stklZeigen(a); zeige('stkl'); }; $('#aBg').onclick = () => { bgWaehlen(a); gModus(true); zeige('bg'); }; }
 }
 
 // ---------- Stückliste ----------
@@ -203,6 +205,9 @@ function stklSortieren(z) {
 }
 function stklTabelle(z, berechnet, sortierbar) {
   const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${sSort.k === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${sSort.k === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
+  // v95: nach Referenzen sortiert → je Referenz eine Zeile
+  if (sortierbar && sSort.k === 'ref') z = z.flatMap(r => { const refs = String(r.ref || '').split(/[,;\s]+/).filter(Boolean);
+    return refs.length > 1 ? refs.map(ref => ({ ...r, ref, anz: r.anz / refs.length })) : [r]; });
   if (sortierbar) z = stklSortieren(z);
   return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
     ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w">${nrFmt(r.nr)}</td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
@@ -245,13 +250,15 @@ function bSchritt() {
   $('#bInfo').textContent = bArt ? $('#bVz').selectedOptions[0].text : '';
 }
 function buchenArtikel(a) {
+  if (a && (a.t || 1) > 1) { bArt = null; $('#bListe').innerHTML = ''; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); $('#bArtikel').value = String(a.n);
+    $('#bMeldung').textContent = 'Das ist eine Baugruppe – Baugruppen bitte über „BG buchen“ buchen.'; bSchritt(); return; }   // v96
   bArt = a; $('#bArtikel').value = String(a.n); $('#bListe').innerHTML = '';
   $('#bNr').textContent = nrFmt(a.n); $('#bBez').textContent = a.b || ''; $('#bSys').textContent = fmt2(a.sys);
   $('#bLo').textContent = [loBez(a), a.lot, a.lp].filter(Boolean).join(' · ');
   $('#bMeldung').textContent = ''; bSchritt();
 }
 const fmt2 = v => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
-$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).slice(0, 40), null, buchenArtikel); });
+$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).filter(a => (a.t || 1) <= 1).slice(0, 40), null, buchenArtikel); });
 ['#bVz', '#bMenge'].forEach(x => $(x).addEventListener('input', bSchritt));
 $('#bBuchen').addEventListener('click', () => {
   const m = $('#bMeldung'); m.className = 'meldung fehler';
@@ -438,7 +445,13 @@ document.addEventListener('touchmove', e => { if (e.touches && e.touches.length 
   setz(); new ResizeObserver(setz).observe(k); addEventListener('orientationchange', () => setTimeout(setz, 300)); })();
 
 /* v79: Bemerkung zuerst gekürzt (Artikel-Datei passt mit Foto auf den Bildschirm), Antippen klappt auf/zu */
-document.addEventListener('click', e => { const b = e.target.closest('.wert.bem'); if (b) b.classList.toggle('zu'); });
+// v93: Bemerkung als Fenster
+const bemFenster = txt => { let d = document.getElementById('bemDlg');
+  if (!d) { d = document.createElement('div'); d.id = 'bemDlg'; d.className = 'bemdlg';
+    d.innerHTML = '<div class="bemkarte" role="dialog" aria-modal="true"><div class="bemkopf"><b>Bemerkung</b><button type="button" class="bemzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div><div class="bemtext"></div></div>';
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('.bemzu')) d.hidden = true; }); document.body.appendChild(d); }
+  d.querySelector('.bemtext').textContent = txt; d.hidden = false; };
+document.addEventListener('click', e => { const b = e.target.closest('.wert.bem.lang'); if (b) bemFenster(b.querySelector('span').textContent); });
 document.addEventListener('click', e => { const l = e.target.closest('.wert.lieflist'); if (l) l.classList.toggle('auf'); });   // v81: lange Lieferanten-Liste antippen
 const bemPruefen = () => document.querySelectorAll('.wert.bem').forEach(b => { const s = b.querySelector('span'); if (!s) return;
   const war = b.classList.contains('zu'); b.classList.add('zu'); b.classList.toggle('lang', s.scrollHeight > s.clientHeight + 2); if (!war) b.classList.remove('zu'); });
@@ -500,7 +513,11 @@ function verwendetIn(nr) {
 
 // v84: iOS meldet beim ersten Start der Home-Bildschirm-App eine falsche 100dvh (erst nach Drehen richtig) → echte Höhe selbst messen
 (() => {
-  const setz = () => { const h = Math.round(window.visualViewport ? visualViewport.height : innerHeight) || innerHeight; document.documentElement.style.setProperty('--apph', h + 'px'); if (typeof fotoEinpassen === 'function') fotoEinpassen(); };
+  const sonde = document.createElement('div'); sonde.style.cssText = 'position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none'; document.documentElement.appendChild(sonde);
+  const setz = () => { const quer = innerWidth > innerHeight; const kand = [innerHeight, window.visualViewport ? visualViewport.height : 0, sonde.offsetHeight];
+    // v94: iOS-Homescreen-App meldet beim ersten Start eine zu kleine Höhe → Bildschirmhöhe verwenden
+    if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) kand.push(quer ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height));
+    const h = Math.round(Math.max(...kand)) || innerHeight; document.documentElement.style.setProperty('--apph', h + 'px'); if (typeof fotoEinpassen === 'function') fotoEinpassen(); };
   setz(); [50, 300, 800, 1500].forEach(t => setTimeout(setz, t));
   addEventListener('resize', setz); addEventListener('pageshow', setz); addEventListener('orientationchange', () => setTimeout(setz, 300));
   window.visualViewport?.addEventListener('resize', setz);

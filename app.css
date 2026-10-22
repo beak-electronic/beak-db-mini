@@ -257,3 +257,19 @@ header#kopf.bf-tick::before { -webkit-backdrop-filter:blur(12.01px) saturate(1.2
 .wbeak .bd{font-family:"ConstantiaBullet",Georgia,serif;font-size:14px;color:#d6007a}
 .wtitel{margin:0 0 6px;font-size:1.75rem;font-weight:800;letter-spacing:.02em;color:#1a1f27}
 .wtitel img{display:none}
+/* v93: Bemerkung-Fenster */
+.wert.bem.lang:not(.zu) label::after { content:"  … mehr anzeigen"; }
+.bemdlg { position:fixed; inset:0; z-index:200; background:rgba(20,22,28,.35); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:24px; }
+.bemdlg[hidden] { display:none; }
+.bemkarte { background:#fff; border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,.18); width:min(640px,94vw); max-height:80vh; display:flex; flex-direction:column; overflow:hidden; }
+.bemkopf { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #eceef1; font-size:17px; }
+.bemzu { border:0; background:#f3f4f6; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; }
+.bemtext { padding:16px 18px 20px; overflow:auto; white-space:pre-wrap; line-height:1.5; font-size:15px; }
+.bemzu { display:flex; align-items:center; justify-content:center; padding:0; color:#4b5563; width:32px; height:32px; }
+.bemzu:active { background:#e5e7eb; }
+.bemdlg { cursor:pointer; } .bemkarte { cursor:auto; } .bemzu { background:transparent; border:1px solid #e5e7eb; }
+.bemzu { border:0; }
+.dkopf select.instkl { margin-left:auto; align-self:center; }
+/* v99: kein Logo im Kopf, Artikel-Datei links */
+header#kopf .marke { display:none; }
+.tab[data-v="artikel"] { margin-right:auto; }
