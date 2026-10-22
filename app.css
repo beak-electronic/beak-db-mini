@@ -296,3 +296,12 @@ ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; 
 header#kopf > .neudb { position:absolute; top:100%; left:0; right:0; z-index:4; }
 header#kopf > .neudb[hidden] { display:none; }
 .dkopf select.instkl:disabled { opacity:.55; }
+.artlink { color:var(--pink); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+/* v107: Zurück-Button rechts neben Artikel-Datei */
+.tab[data-v="artikel"] { margin-right:0; }
+.tabzurueck { display:inline-flex; align-items:center; gap:2px; margin-right:auto; min-height:38px; padding:0 12px 0 6px; border:0; border-radius:10px; background:transparent; color:var(--fix); font-weight:600; font-size:15px; }
+.tabzurueck[hidden] { display:none; }
+.tabzurueck:active { background:var(--soft); }
+#tabs:has(.tabzurueck[hidden]) .tab[data-v="artikel"] { margin-right:auto; }
+.tabzurueck { flex:none; width:38px; height:38px; min-height:38px; padding:0; gap:0; justify-content:center; border-radius:50%; background:#FCE4F1; color:var(--pink); }
+.tabzurueck:active { background:#F8C9E2; }

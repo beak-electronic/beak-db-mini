@@ -68,7 +68,11 @@ function bild(i) {
 }
 
 // ---------- Navigation ----------
+let VERLAUF = [], aktV = null, zurueckLaeuft = false;
 function zeige(v) {
+  if (!zurueckLaeuft && aktV && aktV !== v && DB && !['start','person'].includes(aktV)) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); if (VERLAUF.length > 50) VERLAUF.shift(); }
+  if (!DB || v === 'start' || v === 'person') VERLAUF = [];
+  aktV = v; if ($('#zurueck')) $('#zurueck').hidden = !VERLAUF.length;
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
   $('#tabs').hidden = !DB || v === 'start' || v === 'person'; tabsSetzen(v);
@@ -163,6 +167,7 @@ function artikelSuchen() {
 $('#aSuche').addEventListener('input', artikelSuchen);
 const W = (l, v, cls = '') => `<div class="wert ${cls}"><label>${l}</label><span>${esc(v ?? '')}</span></div>`;
 function artikelZeigen(a) {
+  if (!zurueckLaeuft && aktV === 'artikel' && aktArt && aktArt !== a) merkeSchritt();
   aktArt = a;
   $$('#aListe li').forEach(li => li.classList.toggle('an', +li.dataset.n === a.n));
   const url = bild(a.i);
@@ -218,7 +223,7 @@ function stklTabelle(z, berechnet, sortierbar) {
       } else z = z.filter(r => { const t = `${r.nr} ${nrFmt(r.nr)} ${r.bez || ''}`.toLowerCase(); return w.every(x => t.includes(x)); }); } }
   if (sortierbar) z = stklSortieren(z);
   return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
-    ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w">${nrFmt(r.nr)}</td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
+    ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w"><span class="artlink" data-art="${r.nr}">${nrFmt(r.nr)}</span></td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
 }
 function stklZeigen(a) {
   if (a !== aktStkl && $('#sFilter')) $('#sFilter').value = '';
@@ -540,3 +545,16 @@ function meldungKurz(t) { const d = document.createElement('div'); d.className =
 // v89: Safari soll die Unschärfe der Kopfzeile nach Scrollen/Umschalten neu berechnen
 (() => { const k = document.getElementById('kopf'); if (!k) return; let t = 0; const tick = () => { if (t) return; t = requestAnimationFrame(() => { k.classList.toggle('bf-tick'); t = 0; }); };
   addEventListener('scroll', tick, { passive: true }); addEventListener('resize', tick); setTimeout(tick, 300); })();
+
+// v106: Artikel-Nr in der Stückliste antippen -> Teil in der Artikel-Datei (Reiter oben passen dann zu diesem Teil)
+document.addEventListener('click', e => { const l = e.target.closest('.artlink'); if (!l || !DB) return;
+  const v = l.dataset.art, a = ART.get(+v) || ART.get(v); if (!a) return;
+  merkeSchritt(); zurueckLaeuft = true; try { zeige('artikel'); artikelZeigen(a); } finally { zurueckLaeuft = false; } tabsSetzen('artikel');
+  const li = document.querySelector(`#aListe li[data-n="${a.n}"]`); if (li) li.scrollIntoView({ block: 'nearest' }); });
+
+// v107: Zurück – geht immer ins vorherige Fenster (mit dem Artikel/der Stückliste von damals)
+function merkeSchritt() { if (aktV && DB) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); $('#zurueck').hidden = false; } }
+$('#zurueck').addEventListener('click', () => { const z = VERLAUF.pop(); if (!z) return;
+  zurueckLaeuft = true;
+  try { if (z.art) artikelZeigen(z.art); if (z.v === 'stkl' && z.stkl) stklZeigen(z.stkl); zeige(z.v); } finally { zurueckLaeuft = false; }
+  $('#zurueck').hidden = !VERLAUF.length; });
