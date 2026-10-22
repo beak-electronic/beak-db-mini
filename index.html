@@ -19,7 +19,7 @@
 <body>
 <!-- BEAK DB mini: Code ohne Daten. Die Datenbank (verschlüsselt) wird aus iCloud Drive gewählt und nur lokal entschlüsselt. -->
 <header id="kopf">
-  <div class="marke"><img class="logo" src="logo-db-mini.svg" alt="BEAK DB mini" width="271" height="30"></div>
+  <div class="marke"><img class="logo" src="logo-db-mini-hell.svg" alt="BEAK DB mini" width="271" height="30"></div>
   <nav id="tabs" hidden>
     <button data-v="artikel" class="tab">Artikel-Datei</button>
     <button data-v="stkl" class="tab">Stückliste</button>
@@ -38,15 +38,24 @@
 
 <main>
 <!-- Start / Entsperren -->
-<section id="v-start" class="ansicht">
-  <div class="karte start">
-    <h1 class="startlogo"><img src="logo-db-mini-hell.svg" alt="BEAK DB mini"></h1>
-    <p class="fix" id="startText">Datenbank aus iCloud Drive wählen (Datei <b>beak-db-mini.beakdb</b>), Kennwort eingeben.</p>
-    <label class="dateiwahl"><input type="file" id="fDatei"><span id="fDateiText">Datenbank wählen …</span></label>
-    <p class="anz" id="dbStand"></p>
-    <form id="fForm"><input type="text" name="username" value="BEAK" autocomplete="username" hidden><input type="password" id="fKennwort" placeholder="Kennwort" autocomplete="current-password" enterkeyhint="go"></form>
-    <button id="bOeffnen" class="pink gross">Öffnen</button>
+<section id="v-start" class="ansicht willkommen">
+  <div class="wkarte">
+    <span class="wbeak" aria-label="BEAK"><span class="bl">B&nbsp;E&nbsp;A&nbsp;K</span><span class="bd">•</span></span>
+    <img class="wicon" src="icon-180.png" alt="" width="72" height="72">
+    <h1 class="wtitel">BEAK Datenbank mini</h1>
+    <p class="wsub">Artikel, Stücklisten und Buchungen</p>
+    <div id="wKennwort" class="wkennwort" hidden>
+      <p class="anz" id="dbStand"></p>
+      <form id="fForm"><input type="text" name="username" value="BEAK" autocomplete="username" hidden><input type="password" id="fKennwort" placeholder="Kennwort" autocomplete="current-password" enterkeyhint="go"></form>
+      <label class="merken"><input type="checkbox" id="fMerken" checked> Kennwort auf diesem iPad merken</label>
+      <button id="bOeffnen" class="wbtn primary">Entsperren</button>
+    </div>
+    <div class="waktionen">
+      <label class="wbtn primary" id="wOeffnen"><input type="file" id="fDatei" hidden><span id="fDateiText">Öffnen</span></label>
+      <button id="wEinst" class="wbtn">Einstellungen</button>
+    </div>
     <p id="startMeldung" class="meldung"></p>
+    <p class="wversion" id="wVersion">BEAK DB mini · V32</p>
   </div>
 </section>
 
@@ -202,11 +211,12 @@
     <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span></div>
     <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
     <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>
+    <div class="feld"><label>Kennwort</label><span class="anz" id="iPw"></span><button id="bPwWeg" class="klein" hidden>löschen</button></div>
     <div class="feld"><label>Speichern</label><span class="fix" id="iModus"></span></div>
     <h3>Gesendete Buchungen (dieses Gerät)</h3>
     <p class="fix klein">Der Bestand in der iPad-Datenbank ändert sich erst mit der nächsten „iCloud Datenbank erzeugen“ am PC.</p>
     <ul id="iJournal" class="journal"></ul>
-    <div class="zeile"><button id="iSperren">Sperren</button><button id="iNeueDb">Andere Datenbank laden</button></div>
+    <div class="zeile"><button id="iZurueck" class="pink" hidden>Zurück</button><button id="iSperren">Sperren</button><button id="iNeueDb">Andere Datenbank laden</button></div>
   </div>
 </section>
 </main>

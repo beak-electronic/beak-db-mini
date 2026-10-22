@@ -29,6 +29,12 @@ async function idbPut(v) { const d = await idb(); return new Promise((ok, f) => 
 async function idbGet() { const d = await idb(); return new Promise((ok, f) => { const r = d.transaction('db').objectStore('db').get('aktuell'); r.onsuccess = () => ok(r.result); r.onerror = () => f(r.error); }); }
 async function idbDel() { const d = await idb(); return new Promise(ok => { const t = d.transaction('db', 'readwrite'); t.objectStore('db').delete('aktuell'); t.oncomplete = ok; }); }
 
+// v83: Kennwort merken (wie „Bauteile Suchen“): nicht exportierbarer AES-Schlüssel in IndexedDB, nur das damit verschlüsselte Kennwort wird gespeichert
+async function idbK(k, v) { const d = await idb(); return new Promise((ok, f) => { const t = d.transaction('db', v === undefined ? 'readonly' : 'readwrite'), st = t.objectStore('db'); if (v === undefined) { const r = st.get(k); r.onsuccess = () => ok(r.result); r.onerror = () => f(r.error); } else { v === null ? st.delete(k) : st.put(v, k); t.oncomplete = ok; t.onerror = () => f(t.error); } }); }
+async function pwMerken(pw) { const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(pw)); await idbK('pw', { key, iv, ct }); }
+async function pwHolen() { try { const g = await idbK('pw'); if (!g) return null; return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: g.iv }, g.key, g.ct)); } catch { return null; } }
+async function pwVergessen() { await idbK('pw', null).catch(() => {}); const b = document.querySelector('#bPwWeg'); if (b) b.hidden = true; }
+
 // ---------- Entschlüsseln ----------
 async function entschluesseln(buf, kennwort) {
   const b = new Uint8Array(buf);
@@ -47,7 +53,7 @@ async function entschluesseln(buf, kennwort) {
 }
 
 function laden(modell, bilder) {
-  DB = modell; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
+  DB = modell; VERW = null; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
   for (const u of bildUrl.values()) URL.revokeObjectURL(u); bildUrl.clear();
   for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) > 1) BGTYP.push(a); }
   const kst = '<option value="">&lt; Keine KST &gt;</option>' + (DB.kst || []).map(([n, b]) => `<option value="${n}">${n}  ${esc(b)}</option>`).join('');
@@ -66,47 +72,68 @@ function zeige(v) {
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
   $('#tabs').hidden = !DB || v === 'start' || v === 'person';
-  if (v === 'info') infoZeigen();
+  if (v === 'info') { infoZeigen(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
   if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
   if (v === 'bg') gTabelle();
   if (v === 'bgbuchen') { $('#qName').textContent = ls.get('person') || ''; $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
   window.scrollTo(0, 0);
 }
-$$('.tab').forEach(t => t.addEventListener('click', () => zeige(t.dataset.v)));
+$$('.tab').forEach(t => t.addEventListener('click', () => { tabVorbelegen(t.dataset.v); zeige(t.dataset.v); }));
+// v86: Tabs oben übernehmen den in der Artikel-Datei gewählten Artikel / die Baugruppe (wie die Buttons unten)
+function tabVorbelegen(v) {
+  if (!DB || !aktArt || $('#v-artikel').hidden) return;
+  const a = aktArt, istBg = !!DB.bg[a.n];
+  try {
+    if (v === 'stkl' && istBg) stklZeigen(a);
+    else if (v === 'buchen') buchenArtikel(a);
+    else if (v === 'bgbuchen' && istBg) qWaehlen(a);
+    else if (v === 'bg' && istBg) { bgWaehlen(a); gModus(true); }
+  } catch (e) { console.warn(e); }
+}
 
 // ---------- Start ----------
 let datei = null;   // ArrayBuffer der gewählten (noch verschlüsselten) Datei
 async function startVorbereiten() {
   const c = await idbGet().catch(() => null);
-  if (c) { datei = c.bytes; $('#fDateiText').textContent = 'Andere Datenbank wählen …'; $('#dbStand').textContent = `Gespeichert: ${c.name} (${(c.size / 1048576).toFixed(1)} MB, geladen ${c.geladen})${c.stand ? ` · DB-Stand ${c.stand}` : ''}`; }
+  if (c) { datei = c.bytes; $('#wKennwort').hidden = false; $('#dbStand').textContent = `Gespeichert: ${c.name} (${(c.size / 1048576).toFixed(1)} MB, geladen ${c.geladen})${c.stand ? ` · DB-Stand ${c.stand}` : ''}`; }
   zeige('start'); setTimeout(() => $('#fKennwort').focus(), 50);
+  const gpw = await pwHolen(); $('#bPwWeg').hidden = !gpw;
+  if (c && gpw) oeffnen(gpw);
 }
 $('#fDatei').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   datei = await f.arrayBuffer();
   $('#dbStand').textContent = `Gewählt: ${f.name} (${(f.size / 1048576).toFixed(1)} MB)`;
-  $('#fDateiText').textContent = 'Andere Datenbank wählen …';
+  $('#wKennwort').hidden = false; setTimeout(() => $('#fKennwort').focus(), 50);
   datei._name = f.name;
+  const gpw = await pwHolen(); if (gpw) oeffnen(gpw);
 });
-async function oeffnen() {
+async function oeffnen(gespeichert) {
+  if (typeof gespeichert !== 'string') gespeichert = null;
   const m = $('#startMeldung'); m.className = 'meldung';
   if (!datei) { m.textContent = 'Bitte zuerst die Datenbank aus iCloud Drive wählen.'; m.classList.add('fehler'); return; }
-  const pw = $('#fKennwort').value; if (!pw) { m.textContent = 'Bitte das Kennwort eingeben.'; m.classList.add('fehler'); return; }
-  $('#bOeffnen').disabled = true; m.textContent = 'Entschlüssele …';
+  const pw = gespeichert || $('#fKennwort').value; if (!pw) { m.textContent = 'Bitte das Kennwort eingeben.'; m.classList.add('fehler'); return; }
+  $('#bOeffnen').disabled = true; m.textContent = gespeichert ? 'Öffne mit gespeichertem Kennwort …' : 'Entschlüssele …';
   try {
     const { modell, bilder } = await entschluesseln(datei, pw);
     if (modell.format !== 'BEAK-iPad-DB') throw new Error('Unbekanntes Datenformat.');
     laden(modell, bilder);
+    if (vorherStand) { const neu = dbStandDatum(modell); setTimeout(() => meldungKurz(neu && +neu <= +vorherStand ? 'Das ist dieselbe (oder eine ältere) Datenbankversion wie vorher – auf dem PC gibt es noch keine neuere.' : 'Neue Datenbankversion geladen.'), 300); vorherStand = null; }
+    if (!gespeichert && $('#fMerken').checked) { await pwMerken(pw).catch(() => {}); $('#bPwWeg').hidden = false; }
     if (datei._name) await idbPut({ bytes: datei, name: datei._name, size: datei.byteLength, geladen: new Date().toLocaleString('de-DE'), stand: dbStandText(modell) }).catch(() => {});
     bannerAus(); setTimeout(() => neuDbPruefen('alter'), 400);
     navigator.storage?.persist?.().catch(() => {});      // Safari soll den Zwischenspeicher nicht räumen
     $('#fKennwort').value = ''; m.textContent = '';
     if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'iPad'; $('#fPerson').focus(); }
     else { zeige('artikel'); artikelSuchen(); }
-  } catch (err) { m.textContent = err.message; m.classList.add('fehler'); }
+  } catch (err) { if (gespeichert) { await pwVergessen(); m.textContent = 'Das gespeicherte Kennwort passt nicht (mehr) – bitte neu eingeben.'; } else m.textContent = err.message; m.classList.add('fehler'); }
   finally { $('#bOeffnen').disabled = false; }
 }
-$('#bOeffnen').addEventListener('click', oeffnen);
+$('#bOeffnen').addEventListener('click', () => oeffnen());
+$('#bPwWeg').addEventListener('click', async () => { await pwVergessen(); pwAnzeige(); });
+async function pwAnzeige() { const g = await pwHolen(); $('#iPw').textContent = g ? '●●●●●●●● gespeichert' : 'nicht gespeichert'; $('#bPwWeg').hidden = !g; }
+$('#wEinst').addEventListener('click', () => zeige('info'));
+$('#iZurueck').addEventListener('click', () => zeige(DB ? 'artikel' : 'start'));
 $('#fForm').addEventListener('submit', e => e.preventDefault());
 $('#fKennwort').addEventListener('keydown', e => { if (e.key === 'Enter') oeffnen(); });
 $('#bPerson').addEventListener('click', () => {
@@ -148,10 +175,12 @@ function artikelZeigen(a) {
     </div>
     <div class="unten">
       <div><h3>Letzte Buchungen</h3>${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}
-        <div class="aktionen mt"><button class="pink" id="aBuchen">Diesen Artikel buchen</button>${DB.bg[a.n] ? '<button id="aStkl">Stückliste</button><button id="aBg">Material-Entnahme</button>' : ''}</div></div>
+        <div class="aktionen mt"><button class="pink" id="aBuchen">Diesen Artikel buchen</button>${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : ''; })()}${DB.bg[a.n] ? '<button id="aStkl">Stückliste</button><button id="aBg">Material-Entnahme</button>' : ''}</div></div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
     </div>`;
+  fotoEinpassen(true);
   $('#aBuchen').onclick = () => { buchenArtikel(a); zeige('buchen'); };
+  if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklZeigen(b); zeige('stkl'); } };
   if (DB.bg[a.n]) { $('#aStkl').onclick = () => { stklZeigen(a); zeige('stkl'); }; $('#aBg').onclick = () => { bgWaehlen(a); gModus(true); zeige('bg'); }; }
 }
 
@@ -162,15 +191,28 @@ $('#sSuche').addEventListener('input', () => liste($('#sListe'), suche($('#sSuch
 function stklZeilen(a) {
   return (DB.bg[a.n] || []).map(([nr, anz, refs], i) => { const p = ART.get(nr) || {}; return { i: i + 1, nr, bez: p.b, anz, ref: refText(refs), lo: [p.lo, p.lot, p.lp].filter(Boolean).join(' '), ist: p.ist }; });
 }
-function stklTabelle(z, berechnet) {
-  return `<table><thead><tr><th class="r">Pos</th><th class="r">Artikel-Nr</th><th>Bezeichnung</th><th class="r">Anz</th><th>Referenzen</th><th>Lagerort</th><th class="r">Ist</th></tr></thead><tbody>
+// v87: Stückliste sortierbar (Tipp auf Spaltenkopf, nochmal = umgekehrt, Pfeil zeigt die Sortierung)
+let sSort = { k: 'i', d: 1 };
+const S_SPALTEN = [['i', 'Pos', 'r'], ['nr', 'Artikel-Nr', 'r'], ['bez', 'Bezeichnung', ''], ['anz', 'Anz', 'r'], ['ref', 'Referenzen', ''], ['lo', 'Lagerort', ''], ['ist', 'Ist', 'r']];
+const sKoll = new Intl.Collator('de-DE', { numeric: true, sensitivity: 'base' });
+function stklSortieren(z) {
+  const { k, d } = sSort;
+  return z.slice().sort((x, y) => { const a = x[k], b = y[k];
+    const leerA = a == null || a === '', leerB = b == null || b === ''; if (leerA || leerB) return leerA - leerB;
+    return (typeof a === 'number' && typeof b === 'number' ? a - b : sKoll.compare(String(a), String(b))) * d || x.i - y.i; });
+}
+function stklTabelle(z, berechnet, sortierbar) {
+  const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${sSort.k === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${sSort.k === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
+  if (sortierbar) z = stklSortieren(z);
+  return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
     ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w">${nrFmt(r.nr)}</td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
 }
 function stklZeigen(a) {
   aktStkl = a; $('#sSuche').value = nrFmt(a.n) + ' ' + a.b; $('#sMeldung').textContent = '';
   const z = stklZeilen(a);
   $('#sDetail').innerHTML = `<div class="dkopf mt mb"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span></div>
-    <p class="fix klein">${z.length} Positionen · ${fmt.format(z.reduce((s, r) => s + (r.anz || 0), 0))} Teile je Baugruppe</p>${stklTabelle(z, false)}`;
+    <p class="fix klein">${z.length} Positionen · ${fmt.format(z.reduce((s, r) => s + (r.anz || 0), 0))} Teile je Baugruppe</p>${stklTabelle(z, false, true)}`;
+  $$('#sDetail th.sortk').forEach(th => th.addEventListener('click', () => { const k = th.dataset.k; sSort = sSort.k === k ? { k, d: -sSort.d } : { k, d: 1 }; stklZeigen(aktStkl); }));
 }
 let letztesPdf = null;
 /** Drucken wie Windows: gewählte "Art der Stückliste" und Anzahl → PDF im gleichen Layout (ohne Preise) → Safari-PDF-Ansicht bzw. Teilen (Drucken / In Dateien sichern). */
@@ -181,7 +223,9 @@ function stklPdf() {
   if (!BeakStklDruck.hatLayout(art)) { m.textContent = 'Für diese Art der Stückliste gibt es noch kein Drucklayout.'; return null; }
   const anz = parseFloat(String($('#sAnzahl').value).replace(',', '.'));
   const a = BeakStklDruck.auftrag(DB, art, aktStkl.n, anz > 0 ? anz : 1, ls.get('person'), new Date());
-  const name = `${aktStkl.n} ${BeakStklDruck.titel()[art]}`.replace(/[\/:]/g, '-') + '.pdf';
+  // v90: Lager-Stückliste (Art 3): „5x BG-Bezeichnung (22.09.26)“
+  const heute = new Date(), dStr = `${String(heute.getDate()).padStart(2, '0')}.${String(heute.getMonth() + 1).padStart(2, '0')}.${String(heute.getFullYear()).slice(2)}`;
+  const name = (art === 3 ? `${fmt.format(anz > 0 ? anz : 1)}x ${aktStkl.b || aktStkl.n} (${dStr})` : `${aktStkl.n} ${BeakStklDruck.titel()[art]}`).replace(/[\/:*?"<>|]/g, '-') + '.pdf';
   letztesPdf = new File([BeakStklDruck.pdf(a)], name, { type: 'application/pdf' });
   m.className = 'meldung'; m.textContent = `${name} – ${a.zeilen.length} Zeilen` + ([0, 6].includes(art) ? ' (ohne Preise)' : '');
   return letztesPdf;
@@ -369,7 +413,7 @@ function infoZeigen() {
 $('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'iPad'; zeige('person'); });
 function sperren() { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; bannerAus(); }
 $('#iSperren').addEventListener('click', () => { sperren(); startVorbereiten(); });
-$('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#fDateiText').textContent = 'Datenbank wählen …'; $('#iSperren').click(); });
+$('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#wKennwort').hidden = true; $('#iSperren').click(); });
 // beim Verlassen/Ausblenden nach 15 Minuten automatisch sperren
 let versteckt = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) versteckt = Date.now(); else if (DB && versteckt && Date.now() - versteckt > 15 * 60e3) $('#iSperren').click(); else if (DB) neuDbPruefen('vordergrund'); });
@@ -409,8 +453,8 @@ function bannerAus() { $('#neuDb').hidden = true; document.documentElement.style
 function neuDbPruefen(grund) {
   if (!DB) return;
   const d = dbStandDatum(DB), alt = d && (Date.now() - d) / 36e5 > neuStd();
-  if (grund === 'alter' && !alt) return;
-  if (grund === 'alter' && Date.now() - bannerZu < 30 * 60e3) return;        // nach „Schließen“ 30 Min. Ruhe für den Alters-Hinweis
+  if (grund !== 'manuell' && !alt) return;   // v88: nur wenn die geöffnete DB wirklich älter als X Std. ist (iOS kann die Datei in iCloud nicht selbst prüfen)
+  if (grund !== 'manuell' && Date.now() - bannerZu < 30 * 60e3) return;        // nach „Schließen“ 30 Min. Ruhe für den Alters-Hinweis
   $('#neuDbStand').textContent = `DB-Stand ${dbStandText(DB)} (${dbAlterText(d)})${alt ? ` – älter als ${fmt.format(neuStd())} Std.` : ''}`;
   $('#neuDb').classList.toggle('alt', !!alt); $('#neuDb').hidden = false;
   requestAnimationFrame(() => document.documentElement.style.setProperty('--bannerh', $('#neuDb').offsetHeight + 'px'));
@@ -419,9 +463,10 @@ $('#neuDbZu').addEventListener('click', () => { bannerZu = Date.now(); bannerAus
 $('#neuDbDatei').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   const buf = await f.arrayBuffer(); buf._name = f.name;
+  vorherStand = DB ? dbStandDatum(DB) : null;
   sperren(); await startVorbereiten(); datei = buf;
   $('#dbStand').textContent = `Neu gewählt: ${f.name} (${(f.size / 1048576).toFixed(1)} MB) – Kennwort eingeben und „Öffnen“`;
-  $('#fDateiText').textContent = 'Andere Datenbank wählen …';
+  $('#wKennwort').hidden = false;
   const m = $('#startMeldung'); m.className = 'meldung'; m.textContent = '';
 });
 setInterval(() => neuDbPruefen('alter'), 10 * 60e3);
@@ -429,3 +474,42 @@ $('#iNeuStd').value = String(neuStd()).replace('.', ',');
 $('#iNeuStd').addEventListener('change', () => { const v = parseFloat(String($('#iNeuStd').value).replace(',', '.')); if (v > 0) ls.set('neuDbStunden', String(v)); $('#iNeuStd').value = String(neuStd()).replace('.', ','); });
 $('#iNeuJetzt').addEventListener('click', () => neuDbPruefen('manuell'));
 (() => { const b = document.getElementById('neuDb'); new ResizeObserver(() => { if (!b.hidden) document.documentElement.style.setProperty('--bannerh', b.offsetHeight + 'px'); }).observe(b); })();
+
+/* v82: Foto in die Resthöhe einpassen – Rahmen liegt direkt am Foto, die Bild-Spalte ist exakt so breit wie das Foto (kein Überdecken der Tabelle) */
+function fotoEinpassen(neu) { const _i = document.querySelector("#aDetail .bild img"); if (_i) { _i.style.width = _i.style.height = ""; _i.parentElement.style.width = ""; } return;   // v85: feste Bildgröße wie früher
+}
+function fotoEinpassenAlt(neu) {
+  const u = document.querySelector('#aDetail .unten'), img = u?.querySelector('.bild img'); if (!img) return;
+  if (!img.complete || !img.naturalWidth) { if (neu) img.addEventListener('load', () => fotoEinpassen(), { once: true }); return; }
+  const b = img.parentElement; img.style.width = img.style.height = ''; b.style.width = '';
+  const maxW = Math.min(innerWidth * 0.34, 340), maxH = Math.max(60, u.clientHeight);
+  const s = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+  const w = Math.floor(img.naturalWidth * s), h = Math.floor(img.naturalHeight * s);
+  img.style.width = w + 'px'; img.style.height = h + 'px'; b.style.width = w + 'px';
+  if (neu !== false && !u._ro) { u._ro = new ResizeObserver(() => requestAnimationFrame(() => fotoEinpassen(false))); u._ro.observe(u); }
+}
+addEventListener('resize', () => fotoEinpassen());
+addEventListener('orientationchange', () => setTimeout(fotoEinpassen, 300));
+
+// v82: Verwendungsnachweis – in welchen Stücklisten kommt ein Artikel vor
+let VERW = null;
+function verwendetIn(nr) {
+  if (!VERW) { VERW = new Map(); for (const [bg, teile] of Object.entries(DB.bg || {})) for (const t of teile) { if (String(t[0]) === String(bg)) continue; const k = String(t[0]); if (!VERW.has(k)) VERW.set(k, new Set()); VERW.get(k).add(bg); } }
+  return [...(VERW.get(String(nr)) || [])].map(bg => ART.get(bg) || ART.get(+bg)).filter(Boolean).sort((x, y) => String(x.n).localeCompare(String(y.n), 'de', { numeric: true }));
+}
+
+// v84: iOS meldet beim ersten Start der Home-Bildschirm-App eine falsche 100dvh (erst nach Drehen richtig) → echte Höhe selbst messen
+(() => {
+  const setz = () => { const h = Math.round(window.visualViewport ? visualViewport.height : innerHeight) || innerHeight; document.documentElement.style.setProperty('--apph', h + 'px'); if (typeof fotoEinpassen === 'function') fotoEinpassen(); };
+  setz(); [50, 300, 800, 1500].forEach(t => setTimeout(setz, t));
+  addEventListener('resize', setz); addEventListener('pageshow', setz); addEventListener('orientationchange', () => setTimeout(setz, 300));
+  window.visualViewport?.addEventListener('resize', setz);
+  new MutationObserver(() => requestAnimationFrame(setz)).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
+})();
+
+let vorherStand = null;
+function meldungKurz(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 5000); }
+
+// v89: Safari soll die Unschärfe der Kopfzeile nach Scrollen/Umschalten neu berechnen
+(() => { const k = document.getElementById('kopf'); if (!k) return; let t = 0; const tick = () => { if (t) return; t = requestAnimationFrame(() => { k.classList.toggle('bf-tick'); t = 0; }); };
+  addEventListener('scroll', tick, { passive: true }); addEventListener('resize', tick); setTimeout(tick, 300); })();

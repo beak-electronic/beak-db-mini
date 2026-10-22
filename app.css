@@ -164,8 +164,8 @@ input, select, textarea { font-size:16px; }   /* verhindert Auto-Zoom beim Antip
 /* v79: Bemerkung gekürzt auf 3 Zeilen, Antippen zeigt alles */
 .wert.bem { cursor:pointer; }
 .wert.bem.zu span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
-.wert.bem.lang.zu label::after { content:"  … mehr (antippen)"; font-weight:400; color:var(--pink); font-size:12px; }
-.wert.bem.lang:not(.zu) label::after { content:"  weniger"; font-weight:400; color:var(--pink); font-size:12px; }
+.wert.bem.lang.zu label::after { content:"  … mehr anzeigen"; font-weight:400; color:var(--pink); font-size:12px; }
+.wert.bem.lang:not(.zu) label::after { content:"  weniger anzeigen"; font-weight:400; color:var(--pink); font-size:12px; }
 /* v80: kein Strich unter der letzten Buchung */
 .unten table.letzte tbody tr:last-child td { border-bottom:0 !important; }
 .unten table.letzte { border-bottom:0 !important; }
@@ -198,3 +198,62 @@ tr.aus td { color:#9A9A9A; } tr.aus td.w { color:#B98AA0; }
   .split { grid-template-columns:1fr; grid-template-rows:minmax(150px, 26%) minmax(0,1fr); }
   .detail { overflow:hidden; }
 }
+/* v81: Rahmen eng ums Foto, darf die Tabelle links nicht überdecken */
+.detail .unten { grid-template-columns: minmax(0,1fr) auto; }
+.detail .bild { border:0; background:transparent; border-radius:0; aspect-ratio:auto; width:min(34vw, 340px); max-width:min(34vw, 340px); justify-content:flex-end; align-items:flex-end; overflow:visible; }
+.detail .bild img { width:auto; height:auto; max-width:100%; max-height:100%; object-fit:contain; border:1px solid var(--linie); border-radius:10px; background:#fff; box-sizing:border-box; }
+.detail .bild.leer { border:1px solid var(--linie); border-radius:10px; background:#fff; justify-content:center; align-items:center; }
+/* v82: Foto-Rahmen = Fotogröße (per JS eingepasst: max. 34 vw / 340 px breit, max. Resthöhe, nicht vergrößert);
+   die Bild-Spalte ist genau so breit wie das Foto → nie über der Tabelle, Abstand = Grid-Lücke 12 px */
+.detail .unten { grid-template-columns:minmax(0,1fr) auto; column-gap:12px; }
+.detail .bild { width:auto; max-width:none; height:100%; min-height:0; aspect-ratio:auto; display:flex; align-items:flex-end; justify-content:flex-end; overflow:hidden; border:0; background:transparent; }
+.detail .bild img { display:block; max-width:min(34vw, 340px); max-height:100%; width:auto; height:auto; border:1px solid var(--linie); border-radius:10px; background:#fff; box-sizing:border-box; }
+.detail .bild.leer { width:min(24vw, 200px); height:min(100%, 150px); align-self:end; border:1px solid var(--linie); border-radius:10px; background:#fff; align-items:center; justify-content:center; }
+/* v82: In Stückliste-Auswahl wie ein Button */
+select.instkl { font-size:16px; padding:8px 12px; border-radius:10px; border:1px solid var(--linie); background:#fff; max-width:260px; }
+/* v83: Kennwort merken */
+label.merken { display:flex; align-items:center; gap:8px; font-size:16px; margin:6px 0 10px; }
+label.merken input { width:22px; height:22px; accent-color: rgb(221,0,122); }
+button.link { background:none; border:0; color: rgb(221,0,122); text-decoration:underline; font-size:14px; margin-top:8px; }
+/* v84: Höhe aus JS (--apph) statt 100dvh, sonst beim ersten Start zu kurz */
+.split { height:calc(var(--apph, 100dvh) - var(--kopfh, 60px) - var(--bannerh, 0px) - 24px - env(safe-area-inset-bottom)); }
+/* v85: Bild wieder feste Größe 260×195 wie früher, randfüllend ohne Beschneiden, nie über der Tabelle */
+.detail .unten { grid-template-columns: minmax(0,1fr) 260px; gap:14px; }
+.detail .bild { width:260px !important; height:195px !important; max-width:none; min-height:0; aspect-ratio:auto; align-self:end; border:1px solid var(--linie); border-radius:10px; background:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.detail .bild img { width:100% !important; height:100% !important; max-width:none; max-height:none; object-fit:contain; border:0; border-radius:0; background:transparent; }
+/* v87: sortierbare Stückliste */
+table.sortierbar th.sortk { cursor:pointer; user-select:none; -webkit-user-select:none; white-space:nowrap; }
+table.sortierbar th.sortk.an { color: rgb(221,0,122); }
+table.sortierbar th .pfeil { font-size:0.8em; }
+.toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#333; color:#fff; padding:10px 16px; border-radius:10px; z-index:50; font-size:15px; max-width:90vw; box-shadow:0 4px 16px rgba(0,0,0,.25); }
+/* v89: helle, durchscheinende Kopfzeile mit Unschärfe (wie „Bauteile Suchen“); Inhalt läuft sichtbar dahinter */
+header#kopf { background:transparent; color:var(--fix); border-bottom:1px solid rgba(216,221,230,.75); }
+header#kopf::before { content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:rgba(255,255,255,.72);
+  -webkit-backdrop-filter:blur(12px) saturate(1.2); backdrop-filter:blur(12px) saturate(1.2); transform:translateZ(0); }
+header#kopf > * { position:relative; z-index:1; }
+header#kopf.bf-tick::before { -webkit-backdrop-filter:blur(12.01px) saturate(1.2); backdrop-filter:blur(12.01px) saturate(1.2); }
+.tab { color:var(--grau); border-color:rgba(75,71,72,.25); background:rgba(255,255,255,.45); }
+.tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
+/* v91: Willkommensbildschirm wie „Bauteile Suchen“ */
+#v-start.willkommen { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; padding:max(16px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(221,0,122,.12), transparent 55%), radial-gradient(ellipse 70% 50% at 80% 90%, rgba(59,130,246,.06), transparent 50%), #fff; }
+#v-start.willkommen[hidden] { display:none !important; }
+.wkarte { width:min(420px, 94vw); background:#fff; border:1px solid rgba(26,31,39,.10); border-radius:16px; padding:28px 24px 22px; box-shadow:0 24px 64px rgba(0,0,0,.08); text-align:center; }
+.wicon { width:72px; height:72px; border-radius:16px; display:block; margin:0 auto 14px; box-shadow:0 8px 24px rgba(221,0,122,.22); }
+.wtitel { margin:0 0 6px; } .wtitel img { height:30px; width:auto; display:block; margin:0 auto; }
+.wsub { margin:0 0 22px; color:#6b7280; font-size:.9rem; }
+.waktionen { display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+.wbtn { width:100%; min-height:48px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#f4f5f7; border:1px solid rgba(26,31,39,.10); color:#1a1f27; font-size:17px; cursor:pointer; }
+.wbtn.primary { background:var(--pink); border-color:var(--pink); color:#fff; }
+.wkennwort { text-align:left; margin:0 0 14px; } .wkennwort input[type=password] { width:100%; }
+.wkennwort .wbtn { margin-top:4px; }
+.wversion { margin:16px 0 0; font-size:.72rem; color:#6b7280; opacity:.85; }
+/* v92: Willkommen – Titel als Text, BEAK-Logo oben rechts */
+@font-face{font-family:"AeonisLogo";src:url("fonts/Aeonis.subset.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"ConstantiaBullet";src:url("fonts/Constantia-Bold.subset.ttf") format("truetype");font-display:swap}
+.wkarte{position:relative}
+.wbeak{position:absolute;top:14px;right:14px;display:inline-flex;align-items:baseline;gap:.12em;line-height:1;white-space:nowrap;pointer-events:none;user-select:none}
+.wbeak .bl{font-family:"AeonisLogo",sans-serif;font-size:14px;letter-spacing:.06em;color:#727272}
+.wbeak .bd{font-family:"ConstantiaBullet",Georgia,serif;font-size:14px;color:#d6007a}
+.wtitel{margin:0 0 6px;font-size:1.75rem;font-weight:800;letter-spacing:.02em;color:#1a1f27}
+.wtitel img{display:none}

@@ -16,7 +16,7 @@ var BeakSuche = (function () {
   }
   function wort(w) {
     const n = normalisieren(w);
-    if (/^\d+(\.\d+)?$/.test(n)) { const rx = new RegExp('(?<![\\d.])' + reEsc(n) + '(?![\\d]|\\.\\d)'); return h => rx.test(h); }
+    if (/^\d+(\.\d+)?$/.test(n)) { const rx = new RegExp('(?<![\\d.])' + reEsc(n)); return h => rx.test(h); }
     return h => h.includes(n);
   }
   const woerter = e => (e || '').split(/\s+/).filter(Boolean);
