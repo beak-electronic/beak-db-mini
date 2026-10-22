@@ -173,7 +173,7 @@ function artikelZeigen(a) {
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : ''; })()}</div>
     <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
       <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
-    <div class="werte">${W('Typ', a.t)}${W('Lagerort', a.lo)}
+    <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
     <div class="bemlief einspaltig">
       <div class="wert breit bem zu" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
@@ -451,7 +451,7 @@ startVorbereiten();
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
 /* Doppeltipp-Zoom: per CSS touch-action: manipulation (blockiert keine schnellen Tipps) */
 (() => { const k = document.getElementById('kopf'); if (!k) return; const setz = () => document.documentElement.style.setProperty('--kopfh', k.offsetHeight + 'px');
-  setz(); new ResizeObserver(setz).observe(k); addEventListener('orientationchange', () => setTimeout(setz, 300)); })();
+  setz(); new ResizeObserver(setz).observe(k); [100,400,1000,2500].forEach(t => setTimeout(() => { setz(); const b = document.getElementById('neuDb'); if (b && !b.hidden) document.documentElement.style.setProperty('--bannerh', b.offsetHeight + 'px'); }, t)); addEventListener('pageshow', setz); if (window.visualViewport) visualViewport.addEventListener('resize', setz); addEventListener('resize', setz); if (document.fonts) document.fonts.ready.then(setz); addEventListener('orientationchange', () => setTimeout(setz, 300)); })();
 
 /* v79: Bemerkung zuerst gekürzt (Artikel-Datei passt mit Foto auf den Bildschirm), Antippen klappt auf/zu */
 // v93: Bemerkung als Fenster
@@ -480,6 +480,7 @@ function neuDbPruefen(grund) {
   $('#neuDbStand').textContent = `DB-Stand ${dbStandText(DB)} (${dbAlterText(d)})${alt ? ` – älter als ${fmt.format(neuStd())} Std.` : ''}`;
   $('#neuDb').classList.toggle('alt', !!alt); $('#neuDb').hidden = false;
   requestAnimationFrame(() => document.documentElement.style.setProperty('--bannerh', $('#neuDb').offsetHeight + 'px'));
+  [300,1000].forEach(t => setTimeout(() => { if (!$('#neuDb').hidden) document.documentElement.style.setProperty('--bannerh', $('#neuDb').offsetHeight + 'px'); }, t));
 }
 $('#neuDbZu').addEventListener('click', () => { bannerZu = Date.now(); bannerAus(); });
 $('#neuDbDatei').addEventListener('change', async e => {

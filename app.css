@@ -286,3 +286,6 @@ ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; 
 /* v102: Kopf gleich hoch mit/ohne "In Stückliste" */
 .dkopf { min-height:38px; align-content:flex-start; }
 .dkopf select.instkl { min-height:0; height:34px; padding-top:0; padding-bottom:0; margin-top:0; margin-bottom:0; align-self:flex-start; }
+/* v103: "In Stückliste" schwebt rechts oben – beeinflusst die Zeilenhöhe nie */
+.dkopf { position:relative; min-height:0; padding-right:270px; }
+.dkopf select.instkl { position:absolute; right:0; top:0; margin:0; width:260px; }
