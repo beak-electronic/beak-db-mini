@@ -38,8 +38,8 @@ async function pwVergessen() { await idbK('pw', null).catch(() => {}); const b =
 // ---------- Entschlüsseln ----------
 async function entschluesseln(buf, kennwort) {
   const b = new Uint8Array(buf);
-  if (b.length < 57 || new TextDecoder().decode(b.slice(0, 8)) !== 'BEAKIPAD') throw new Error('Das ist keine BEAK-iPad-Datenbank.');
-  if (b[8] !== 1) throw new Error('Unbekannte Version der iPad-Datenbank – bitte die App aktualisieren.');
+  if (b.length < 57 || new TextDecoder().decode(b.slice(0, 8)) !== 'BEAKIPAD') throw new Error('Das ist keine BEAK-Geräte-Datenbank.');
+  if (b[8] !== 1) throw new Error('Unbekannte Version der Geräte-Datenbank – bitte die App aktualisieren.');
   const it = new DataView(buf).getUint32(9);
   const kopf = b.slice(0, 41), salz = b.slice(13, 29), iv = b.slice(29, 41);
   const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(kennwort), 'PBKDF2', false, ['deriveKey']);
@@ -76,7 +76,7 @@ function zeige(v) {
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
   $('#tabs').hidden = !DB || v === 'start' || v === 'person'; tabsSetzen(v);
-  if (v === 'info') { infoZeigen(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
+  if (v === 'info') { infoZeigen(); ordnerAnzeige(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
   if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
   if (v === 'bg') gTabelle();
   if (v === 'bgbuchen') { $('#qName').textContent = ls.get('person') || ''; $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
@@ -107,7 +107,49 @@ async function startVorbereiten() {
   if (c) { datei = c.bytes; $('#wKennwort').hidden = false; $('#dbStand').textContent = `Gespeichert: ${c.name} (${(c.size / 1048576).toFixed(1)} MB, geladen ${c.geladen})${c.stand ? ` · DB-Stand ${c.stand}` : ''}`; }
   zeige('start'); setTimeout(() => $('#fKennwort').focus(), 50);
   const gpw = await pwHolen(); $('#bPwWeg').hidden = !gpw;
+  if (DESKTOP && !autoGeladen && await dbAusOrdner(false)) return;
   if (c && gpw) oeffnen(gpw);
+}
+// ---------- v101: Ordner verknüpfen (Windows/Desktop, File System Access API) ----------
+const DESKTOP = typeof window.showDirectoryPicker === 'function';
+if (DESKTOP) document.documentElement.classList.add('desktop');
+let dbOrdnerVerknuepft = false, autoGeladen = false;
+const ordnerHolen = k => idbK('ordner-' + k).catch(() => null);
+async function ordnerRecht(h, mode, fragen) {
+  const o = { mode }; if (await h.queryPermission(o) === 'granted') return true;
+  return fragen ? (await h.requestPermission(o)) === 'granted' : false;
+}
+/** neueste *.beakdb im Datenbank-Ordner laden – gleicher Weg wie „Öffnen“ (Kennwort/Entschlüsseln). */
+async function dbAusOrdner(geste) {
+  const dir = await ordnerHolen('db'); dbOrdnerVerknuepft = !!dir; if (!dir) return false;
+  const m = $('#startMeldung'), btn = $('#wZugriff');
+  try {
+    if (!await ordnerRecht(dir, 'read', geste)) { btn.hidden = false; m.className = 'meldung'; m.textContent = `Datenbank-Ordner „${dir.name}“ verknüpft – einmal „Zugriff erlauben“ klicken.`; return true; }
+    btn.hidden = true;
+    let best = null;
+    for await (const h of dir.values()) if (h.kind === 'file' && /\.beakdb$/i.test(h.name)) { const f = await h.getFile(); if (!best || f.lastModified > best.lastModified) best = f; }
+    if (!best) { m.className = 'meldung fehler'; m.textContent = `Im Ordner „${dir.name}“ liegt keine .beakdb-Datei.`; return false; }
+    autoGeladen = true;
+    datei = await best.arrayBuffer(); datei._name = best.name;
+    $('#dbStand').textContent = `Aus Ordner „${dir.name}“: ${best.name} (${(best.size / 1048576).toFixed(1)} MB, ${new Date(best.lastModified).toLocaleString('de-DE')})`;
+    $('#wKennwort').hidden = false; m.className = 'meldung'; m.textContent = '';
+    const gpw = await pwHolen(); if (gpw) oeffnen(gpw); else setTimeout(() => $('#fKennwort').focus(), 50);
+    return true;
+  } catch (e) { console.warn(e); m.className = 'meldung fehler'; m.textContent = 'Datenbank-Ordner nicht lesbar: ' + e.message; return false; }
+}
+async function ordnerAnzeige() {
+  $('#iOrdner').hidden = !DESKTOP; if (!DESKTOP) return;
+  for (const k of ['db', 'buch']) { const h = await ordnerHolen(k); $('#iOrd-' + k).textContent = h ? h.name : 'nicht verknüpft'; $('#iOrdLoesen-' + k).hidden = !h; }
+}
+if (DESKTOP) {
+  for (const k of ['db', 'buch']) {
+    $('#iOrdWahl-' + k).addEventListener('click', async () => {
+      try { const h = await showDirectoryPicker({ id: 'beak-' + k, mode: k === 'db' ? 'read' : 'readwrite' }); await idbK('ordner-' + k, h); if (k === 'db') { dbOrdnerVerknuepft = true; bannerAus(); } ordnerAnzeige(); } catch (e) { if (e.name !== 'AbortError') alert(e.message); }
+    });
+    $('#iOrdLoesen-' + k).addEventListener('click', async () => { await idbK('ordner-' + k, null); if (k === 'db') dbOrdnerVerknuepft = false; ordnerAnzeige(); });
+  }
+  $('#wZugriff').addEventListener('click', () => { autoGeladen = false; dbAusOrdner(true); });
+  ordnerHolen('db').then(h => { dbOrdnerVerknuepft = !!h; });
 }
 $('#fDatei').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
@@ -133,7 +175,7 @@ async function oeffnen(gespeichert) {
     bannerAus(); setTimeout(() => neuDbPruefen('alter'), 400);
     navigator.storage?.persist?.().catch(() => {});      // Safari soll den Zwischenspeicher nicht räumen
     $('#fKennwort').value = ''; m.textContent = '';
-    if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'iPad'; $('#fPerson').focus(); }
+    if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'Gerät'; $('#fPerson').focus(); }
     else { zeige('artikel'); artikelSuchen(); }
   } catch (err) { if (gespeichert) { await pwVergessen(); m.textContent = 'Das gespeicherte Kennwort passt nicht (mehr) – bitte neu eingeben.'; } else m.textContent = err.message; m.classList.add('fehler'); }
   finally { $('#bOeffnen').disabled = false; }
@@ -147,7 +189,7 @@ $('#fForm').addEventListener('submit', e => e.preventDefault());
 $('#fKennwort').addEventListener('keydown', e => { if (e.key === 'Enter') oeffnen(); });
 $('#bPerson').addEventListener('click', () => {
   const p = $('#fPerson').value.trim(); if (p.length < 2) { $('#fPerson').focus(); return; }
-  ls.set('person', p); ls.set('geraet', $('#fGeraet').value.trim() || 'iPad');
+  ls.set('person', p); ls.set('geraet', $('#fGeraet').value.trim() || 'Gerät');
   zeige('artikel'); artikelSuchen();
 });
 
@@ -379,8 +421,8 @@ $('#gTabelle').addEventListener('click', e => {
 });
 function gJournal() {
   const j = JSON.parse(ls.get('journal') || '[]').filter(x => x.me);
-  $('#gTabelle').innerHTML = j.length ? `<table><thead><tr><th>Gebucht am (iPad)</th><th>Inhalt</th><th>Datei</th></tr></thead><tbody>${j.map(x => `<tr><td>${esc(x.zeit)}</td><td>${esc(x.text)}</td><td class="klein">${esc(x.name)}</td></tr>`).join('')}</tbody></table>`
-    : '<p class="fix klein">Von diesem iPad wurden noch keine Material-Entnahmen gesendet.</p>';
+  $('#gTabelle').innerHTML = j.length ? `<table><thead><tr><th>Gebucht am (Gerät)</th><th>Inhalt</th><th>Datei</th></tr></thead><tbody>${j.map(x => `<tr><td>${esc(x.zeit)}</td><td>${esc(x.text)}</td><td class="klein">${esc(x.name)}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="fix klein">Von diesem Gerät wurden noch keine Material-Entnahmen gesendet.</p>';
 }
 function gModus(neu) { gModusNeu = neu; $('#gModusNeu').classList.toggle('an', neu); $('#gModusGebucht').classList.toggle('an', !neu); ['#gAnzahl', '#gBg', '#gKst', '#gBem', '#gAnfuegen'].forEach(x => $(x).disabled = !neu); $('#gMeldung').textContent = ''; gTabelle(); }
 $('#gModusNeu').addEventListener('click', () => gModus(true));
@@ -405,33 +447,54 @@ const istStandalone = () => matchMedia('(display-mode: standalone)').matches || 
 let letzteDatei = null;
 function buchungSpeichern(teil, text, me) {
   const d = new Date(), guid = crypto.randomUUID();
-  const b = { format: 'BEAK-iPad-Buchung', version: 2, guid, ...teil, person: ls.get('person'), zeitpunkt: isoMitOffset(d), geraet: ls.get('geraet') || 'iPad', dbStand: DB.erzeugt };
+  const b = { format: 'BEAK-iPad-Buchung', version: 2, guid, ...teil, person: ls.get('person'), zeitpunkt: isoMitOffset(d), geraet: ls.get('geraet') || 'Gerät', dbStand: DB.erzeugt };
   const name = `BEAK_Buchung_${d.getFullYear()}${zwei(d.getMonth() + 1)}${zwei(d.getDate())}-${zwei(d.getHours())}${zwei(d.getMinutes())}_${teil.artikelNr}_${guid.slice(0, 8)}.json`;
   const file = new File([JSON.stringify(b, null, 2)], name, { type: 'application/json' });
   letzteDatei = file;
   const j = JSON.parse(ls.get('journal') || '[]'); j.unshift({ guid, name, zeit: d.toLocaleString('de-DE'), text, me: !!me }); ls.set('journal', JSON.stringify(j.slice(0, 200)));
+  if (DESKTOP) { buchungDesktop(file, name, text); nachBuchung = true; return; }
   let weg;
   if (istStandalone() && navigator.canShare?.({ files: [file] })) { weg = 'Jetzt unten auf „In Dateien sichern …“ tippen und im Teilen-Menü „In Dateien sichern“ → iCloud Drive/BEAK/Buchungen wählen.'; }
-  else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); weg = 'Die Datei wird in den Safari-Download-Ordner (iCloud Drive/BEAK/Buchungen) geladen.'; }
-  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchung erstellt – bitte sichern' : 'Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungen vom iPad vorhanden!“, sobald iCloud die Datei synchronisiert hat.\nDatenbank-Stand hier: ${dbStandText(DB)}`, !!navigator.canShare?.({ files: [file] }));
+  else { download(file); weg = 'Die Datei wird in den Safari-Download-Ordner (iCloud Drive/BEAK/Buchungen) geladen.'; }
+  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchung erstellt – bitte sichern' : 'Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungsanfragen vorhanden!“, sobald iCloud die Datei synchronisiert hat.\nDatenbank-Stand hier: ${dbStandText(DB)}`, !!navigator.canShare?.({ files: [file] }));
   nachBuchung = true;
 }
 let nachBuchung = false;
+function download(file) { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+// v101: Windows/Desktop – direkt in den verknüpften Buchungs-Ordner schreiben, sonst „Speichern unter“ bzw. Download
+async function dateiSchreiben(dir, file) { const h = await dir.getFileHandle(file.name, { create: true }); const w = await h.createWritable(); await w.write(file); await w.close(); }
+async function buchungDesktop(file, name, text) {
+  const fuss = `\n\nDatenbank-Stand hier: ${dbStandText(DB)}`;
+  const dir = await ordnerHolen('buch');
+  if (dir) {
+    try { if (await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchung gespeichert', `${text}\n\nGespeichert in ${dir.name}/${name}${fuss}`, false); return; } }
+    catch (e) { console.warn(e); }
+    letzteDatei = file;
+    dialog('Buchung erstellt – bitte sichern', `${text}\n\nKein Zugriff auf den Buchungs-Ordner „${dir.name}“. Bitte unten auf „Speichern …“ klicken.${fuss}`, true); return;
+  }
+  dialog('Buchung erstellt – bitte sichern', `${text}\n\nDatei: ${name}\nBitte unten auf „Speichern …“ klicken (oder in den Einstellungen einen Buchungs-Ordner verknüpfen).${fuss}`, true);
+}
+async function desktopSichern(file) {
+  const dir = await ordnerHolen('buch');
+  try { if (dir && await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchung gespeichert', `Gespeichert in ${dir.name}/${file.name}`, false); return; } } catch (e) { console.warn(e); }
+  if (window.showSaveFilePicker) { try { const h = await showSaveFilePicker({ suggestedName: file.name, types: [{ description: 'BEAK Buchung', accept: { 'application/json': ['.json'] } }] }); const w = await h.createWritable(); await w.write(file); await w.close(); dialog('Buchung gespeichert', `Gespeichert: ${h.name}`, false); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  download(file); dialog('Buchung gespeichert', `Als Download gespeichert: ${file.name}`, false);
+}
 function dialog(titel, text, teilen) {
-  $('#dlgTitel').textContent = titel; $('#dlgText').innerText = text; $('#dlgTeilen').hidden = !teilen; $('#dlg').hidden = false;
+  $('#dlgTitel').textContent = titel; $('#dlgTeilen').textContent = DESKTOP ? 'Speichern …' : 'In Dateien sichern …'; $('#dlgText').innerText = text; $('#dlgTeilen').hidden = !teilen; $('#dlg').hidden = false;
 }
 $('#dlgOk').addEventListener('click', () => { $('#dlg').hidden = true; if (nachBuchung) { nachBuchung = false; neuDbPruefen('buchung'); } });
-$('#dlgTeilen').addEventListener('click', () => letzteDatei && navigator.share({ files: [letzteDatei] }).catch(() => {}));
+$('#dlgTeilen').addEventListener('click', () => { if (!letzteDatei) return; if (DESKTOP) desktopSichern(letzteDatei); else navigator.share({ files: [letzteDatei] }).catch(() => {}); });
 
 // ---------- Einstellungen ----------
 function infoZeigen() {
-  $('#iPerson').textContent = ls.get('person') || ''; $('#iGeraet').textContent = ls.get('geraet') || 'iPad';
+  $('#iPerson').textContent = ls.get('person') || ''; $('#iGeraet').textContent = ls.get('geraet') || 'Gerät';
   $('#iDb').textContent = DB ? `Stand ${dbStandText(DB)} (${dbAlterText(dbStandDatum(DB))}) · ${DB.quelle} · ${nrFmt(DB.a.length)} Artikel · Stückliste: ${nrFmt(Object.keys(DB.bg).length)} · ${nrFmt(DB.img.length)} Bilder` : '';
-  $('#iModus').textContent = istStandalone() ? 'Home-Bildschirm-App: Buchungen über „Teilen → In Dateien sichern“' : 'Safari-Tab: Buchungen als Download (Download-Ordner in den Einstellungen auf iCloud Drive/BEAK/Buchungen stellen)';
+  $('#iModus').textContent = DESKTOP ? 'Windows/PC: Buchungen in den verknüpften Buchungs-Ordner (sonst „Speichern unter“)' : istStandalone() ? 'Home-Bildschirm-App: Buchungen über „Teilen → In Dateien sichern“' : 'Safari-Tab: Buchungen als Download (Download-Ordner in den Einstellungen auf iCloud Drive/BEAK/Buchungen stellen)';
   const j = JSON.parse(ls.get('journal') || '[]');
   $('#iJournal').innerHTML = j.length ? j.map(x => `<li><span class="anz">${esc(x.zeit)}</span> · ${esc(x.text)}<br><span class="klein">${esc(x.name)}</span></li>`).join('') : '<li class="fix">Noch keine Buchungen.</li>';
 }
-$('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'iPad'; zeige('person'); });
+$('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'Gerät'; zeige('person'); });
 function sperren() { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; bannerAus(); }
 $('#iSperren').addEventListener('click', () => { sperren(); startVorbereiten(); });
 $('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#wKennwort').hidden = true; $('#iSperren').click(); });
@@ -479,6 +542,7 @@ let bannerZu = 0;
 function bannerAus() { $('#neuDb').hidden = true; document.documentElement.style.setProperty('--bannerh', '0px'); }
 function neuDbPruefen(grund) {
   if (!DB) return;
+  if (DESKTOP && dbOrdnerVerknuepft) return;   // v101: Windows lädt beim Start automatisch aus dem verknüpften Ordner
   const d = dbStandDatum(DB), alt = d && (Date.now() - d) / 36e5 > neuStd();
   if (grund !== 'manuell' && !alt) return;   // v88: nur wenn die geöffnete DB wirklich älter als X Std. ist (iOS kann die Datei in iCloud nicht selbst prüfen)
   if (grund !== 'manuell' && Date.now() - bannerZu < 30 * 60e3) return;        // nach „Schließen“ 30 Min. Ruhe für den Alters-Hinweis
@@ -531,7 +595,8 @@ function verwendetIn(nr) {
   const sonde = document.createElement('div'); sonde.style.cssText = 'position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none'; document.documentElement.appendChild(sonde);
   const setz = () => { const quer = innerWidth > innerHeight; const kand = [innerHeight, window.visualViewport ? visualViewport.height : 0, sonde.offsetHeight];
     // v94: iOS-Homescreen-App meldet beim ersten Start eine zu kleine Höhe → Bildschirmhöhe verwenden
-    if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) kand.push(quer ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height));
+    if (navigator.standalone === true) kand.push(   // v101: nur iOS – Windows-App (Edge/Chrome) hat Taskleiste/Titelleiste, Bildschirmhöhe wäre zu groß
+      quer ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height));
     const h = Math.round(Math.max(...kand)) || innerHeight; document.documentElement.style.setProperty('--apph', h + 'px'); if (typeof fotoEinpassen === 'function') fotoEinpassen(); };
   setz(); [50, 300, 800, 1500].forEach(t => setTimeout(setz, t));
   addEventListener('resize', setz); addEventListener('pageshow', setz); addEventListener('orientationchange', () => setTimeout(setz, 300));

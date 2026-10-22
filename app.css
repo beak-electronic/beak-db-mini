@@ -305,3 +305,11 @@ header#kopf > .neudb[hidden] { display:none; }
 #tabs:has(.tabzurueck[hidden]) .tab[data-v="artikel"] { margin-right:auto; }
 .tabzurueck { flex:none; width:38px; height:38px; min-height:38px; padding:0; gap:0; justify-content:center; border-radius:50%; background:#FCE4F1; color:var(--pink); }
 .tabzurueck:active { background:#F8C9E2; }
+/* v101: Windows/Desktop – Foto füllt die Resthöhe bis unten, ganz sichtbar (contain); iPad bleibt 260×195 */
+html.desktop .detail .unten { grid-template-columns: minmax(0,1fr) auto; }
+html.desktop .detail .bild { height:100% !important; width:auto !important; aspect-ratio:4 / 3; max-width:min(40vw, 640px); min-height:0; }
+html.desktop .detail .bild img { width:100% !important; height:100% !important; object-fit:contain; }
+/* v108: Zurück mittig, etwas Abstand zu Artikel-Datei */
+.tabzurueck { align-self:center; margin-left:10px; margin-top:0; margin-bottom:0; display:inline-flex; align-items:center; justify-content:center; line-height:0; }
+.tabzurueck[hidden] { display:none; }
+.tabzurueck svg { display:block; }

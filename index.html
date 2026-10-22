@@ -49,15 +49,16 @@
     <div id="wKennwort" class="wkennwort" hidden>
       <p class="anz" id="dbStand"></p>
       <form id="fForm"><input type="text" name="username" value="BEAK" autocomplete="username" hidden><input type="password" id="fKennwort" placeholder="Kennwort" autocomplete="current-password" enterkeyhint="go"></form>
-      <label class="merken"><input type="checkbox" id="fMerken" checked> Kennwort auf diesem iPad merken</label>
+      <label class="merken"><input type="checkbox" id="fMerken" checked> Kennwort auf diesem Gerät merken</label>
       <button id="bOeffnen" class="wbtn primary">Entsperren</button>
     </div>
     <div class="waktionen">
       <label class="wbtn primary" id="wOeffnen"><input type="file" id="fDatei" accept=".beakdb,application/octet-stream" hidden><span id="fDateiText">Öffnen</span></label>
       <button id="wEinst" class="wbtn">Einstellungen</button>
     </div>
+    <button id="wZugriff" class="wbtn primary" hidden>Zugriff erlauben</button>
     <p id="startMeldung" class="meldung"></p>
-    <p class="wversion" id="wVersion">BEAK DB mini · V40</p>
+    <p class="wversion" id="wVersion">BEAK DB mini · V41</p>
   </div>
 </section>
 
@@ -67,7 +68,7 @@
     <h1>Wer bucht?</h1>
     <p class="fix">Ihr Name wird einmal gespeichert und bei jeder Buchung mitgeschickt.</p>
     <input type="text" id="fPerson" placeholder="Vor- und Nachname" autocomplete="name" enterkeyhint="done">
-    <input type="text" id="fGeraet" placeholder="Gerätename, z. B. iPad Lager" enterkeyhint="done">
+    <input type="text" id="fGeraet" placeholder="Gerätename, z. B. Lager" enterkeyhint="done">
     <button id="bPerson" class="pink gross">Speichern</button>
   </div>
 </section>
@@ -216,8 +217,14 @@
     <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>
     <div class="feld"><label>Kennwort</label><span class="anz" id="iPw"></span><button id="bPwWeg" class="klein" hidden>löschen</button></div>
     <div class="feld"><label>Speichern</label><span class="fix" id="iModus"></span></div>
+    <div id="iOrdner" hidden>
+      <h3>Ordner verknüpfen (Windows)</h3>
+      <div class="feld"><label>Datenbank-Ordner</label><span class="anz" id="iOrd-db"></span><button id="iOrdWahl-db" class="klein">Ordner wählen</button><button id="iOrdLoesen-db" class="klein" hidden>Lösen</button></div>
+      <div class="feld"><label>Buchungs-Ordner</label><span class="anz" id="iOrd-buch"></span><button id="iOrdWahl-buch" class="klein">Ordner wählen</button><button id="iOrdLoesen-buch" class="klein" hidden>Lösen</button></div>
+      <p class="fix klein">Beim Start wird automatisch die neueste .beakdb aus dem Datenbank-Ordner geladen; Buchungen landen direkt im Buchungs-Ordner.</p>
+    </div>
     <h3>Gesendete Buchungen (dieses Gerät)</h3>
-    <p class="fix klein">Der Bestand in der iPad-Datenbank ändert sich erst mit der nächsten „iCloud Datenbank erzeugen“ am PC.</p>
+    <p class="fix klein">Der Bestand in der Geräte-Datenbank ändert sich erst mit der nächsten „iCloud Datenbank erzeugen“ am PC.</p>
     <ul id="iJournal" class="journal"></ul>
     <div class="zeile"><button id="iZurueck" class="pink" hidden>Zurück</button><button id="iSperren">Sperren</button><button id="iNeueDb">Andere Datenbank laden</button></div>
   </div>
