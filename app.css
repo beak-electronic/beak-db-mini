@@ -273,3 +273,13 @@ header#kopf.bf-tick::before { -webkit-backdrop-filter:blur(12.01px) saturate(1.2
 /* v99: kein Logo im Kopf, Artikel-Datei links */
 header#kopf .marke { display:none; }
 .tab[data-v="artikel"] { margin-right:auto; }
+/* v100: Suche in der Stückliste */
+.druckwahl .sfilter { display:block; width:100%; margin-top:8px; box-sizing:border-box; }
+.stklkopf { align-items:start; }
+.stklkopf > #sSuche { margin-top:24px; }
+@media (max-width: 900px) { .stklkopf > #sSuche { margin-top:0; } }
+table mark { background:#fde2ef; color:var(--pink); font-weight:700; border-radius:4px; padding:0 3px; }
+/* v101: Trefferliste links – kleinere Schrift, lange Bezeichnungen umbrechen statt abschneiden */
+ul.ergebnis li { font-size:14px; align-items:baseline; }
+ul.ergebnis li .nr { min-width:58px; }
+ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25; }

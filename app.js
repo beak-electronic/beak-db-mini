@@ -78,6 +78,7 @@ function zeige(v) {
   if (v === 'bgbuchen') { $('#qName').textContent = ls.get('person') || ''; $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
   window.scrollTo(0, 0);
 }
+$('#sFilter').addEventListener('input', () => { if (aktStkl) stklZeigen(aktStkl); });
 $$('.tab').forEach(t => t.addEventListener('click', () => { tabVorbelegen(t.dataset.v); zeige(t.dataset.v); }));
 // v98: oben nur die Reiter, die zum gewählten Artikel passen
 function tabsSetzen(v) { const a = aktArt, t = a ? (a.t || 1) : 0, stk = !!(a && DB && DB.bg[a.n]);
@@ -206,13 +207,21 @@ function stklSortieren(z) {
 function stklTabelle(z, berechnet, sortierbar) {
   const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${sSort.k === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${sSort.k === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
   // v95: nach Referenzen sortiert → je Referenz eine Zeile
-  if (sortierbar && sSort.k === 'ref') z = z.flatMap(r => { const refs = String(r.ref || '').split(/[,;\s]+/).filter(Boolean);
+  if (sortierbar && sSort.k === 'ref') z = z.flatMap(r => { const refs = String(r.ref || '').split(/\s*[,;\n]\s*/).map(x => x.trim()).filter(Boolean);
     return refs.length > 1 ? refs.map(ref => ({ ...r, ref, anz: r.anz / refs.length })) : [r]; });
+  // v100: Suche in der Stückliste (Artikel-Nr, Bezeichnung, Referenz)
+  if (sortierbar) { const w = ($('#sFilter')?.value || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (w.length) { const q = w.join(' '), refsVon = r => String(r.ref || '').toLowerCase().split(/\s*[,;\n]\s*/).map(x => x.trim()).filter(Boolean);
+      const treffRef = z.filter(r => refsVon(r).some(x => x === q || x.replace(/\s+/g, '') === q.replace(/\s+/g, '')));
+      if (treffRef.length) {   // genaue Referenz gefunden (z. B. „R1“, „IC 3“) → nur diese Zeile(n), Referenz hervorheben
+        z = treffRef.map(r => ({ ...r, refHl: q }));
+      } else z = z.filter(r => { const t = `${r.nr} ${nrFmt(r.nr)} ${r.bez || ''}`.toLowerCase(); return w.every(x => t.includes(x)); }); } }
   if (sortierbar) z = stklSortieren(z);
   return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
-    ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w">${nrFmt(r.nr)}</td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
+    ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w">${nrFmt(r.nr)}</td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
 }
 function stklZeigen(a) {
+  if (a !== aktStkl && $('#sFilter')) $('#sFilter').value = '';
   aktStkl = a; $('#sSuche').value = nrFmt(a.n) + ' ' + a.b; $('#sMeldung').textContent = '';
   const z = stklZeilen(a);
   $('#sDetail').innerHTML = `<div class="dkopf mt mb"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span></div>
