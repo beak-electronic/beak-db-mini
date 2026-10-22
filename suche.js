@@ -16,13 +16,26 @@ var BeakSuche = (function () {
   }
   function wort(w) {
     const n = normalisieren(w);
+    // Ziffern mit Punkt ("200.", "200.4", "1.234"): Präfix der BEAK-Nr.; ohne Punkt am Ende zusätzlich als Wert (wie ArtikelFilter.cs)
+    if (/^\d+(\.\d*)+$/.test(n)) {
+      const z = n.replace(/\./g, ''), wert = n.endsWith('.') ? null : new RegExp('(?<![\\d.])' + reEsc(n) + '(?!\\d)');
+      return h => h.startsWith(z) || (wert !== null && wert.test(h));
+    }
     if (/^\d+(\.\d+)?$/.test(n)) { const rx = new RegExp('(?<![\\d.])' + reEsc(n)); return h => rx.test(h); }
     return h => h.includes(n);
+  }
+  // Index NUR aus BEAK-Nr. und Bezeichnung (Bernd 22.10.) – im Gerät selbst gebaut, damit auch ältere Datenbank-Dateien
+  // (deren "x" noch Bemerkung/Sachmerkmale enthielt) richtig suchen. Entspricht ArtikelFilter.IndexTextIPad.
+  const idx = new WeakMap();
+  function index(a) {
+    let h = idx.get(a);
+    if (h === undefined) { const n = String(a.n); h = normalisieren(n + ' | ' + Number(a.n).toLocaleString('de-DE') + ' | ' + (a.b || '')); idx.set(a, h); }
+    return h;
   }
   const woerter = e => (e || '').split(/\s+/).filter(Boolean);
   function muster(e) {
     const pr = woerter(e).map(w => w.includes('*') ? (rx => h => rx.test(h))(new RegExp(normalisieren(w).split('*').map(reEsc).join('.*'))) : wort(w));
-    return a => pr.every(p => p(a.x || ''));
+    return a => { const h = index(a); return pr.every(p => p(h)); };
   }
   function rang(e) {
     const ws = woerter(e); if (!ws.length) return () => 2;
