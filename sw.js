@@ -1,5 +1,5 @@
 // BEAK DB mini – Service Worker: speichert NUR den Programmcode (offline nutzbar). Die Datenbank liegt verschlüsselt in IndexedDB.
-const CACHE = 'beak-db-mini-v37';
+const CACHE = 'beak-db-mini-v38';
 const DATEIEN = ['./', './index.html', './app.css', './app.js', './suche.js', './stkllayout.js', './pdfbreiten.js', './stkldruck.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo-db-mini.svg', './logo-db-mini-hell.svg', './fonts/Aeonis.subset.ttf', './fonts/Constantia-Bold.subset.ttf'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n !== CACHE).map(n => caches.delete(n)))).then(() => self.clients.claim())));

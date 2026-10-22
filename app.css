@@ -289,3 +289,6 @@ ul.ergebnis li .bez { white-space:normal; overflow:visible; text-overflow:clip; 
 /* v103: "In Stückliste" schwebt rechts oben – beeinflusst die Zeilenhöhe nie */
 .dkopf { position:relative; min-height:0; padding-right:270px; }
 .dkopf select.instkl { position:absolute; right:0; top:0; margin:0; width:260px; }
+/* v104: Bemerkung immer 3 Zeilen hoch -> nichts darunter verrutscht beim Artikelwechsel */
+.wert.bem.zu span { height:calc(3 * 1.3em); min-height:calc(3 * 1.3em); line-height:1.3em; }
+.wert span { min-height:1.3em; line-height:1.3em; }
