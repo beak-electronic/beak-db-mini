@@ -606,7 +606,10 @@ $('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = nu
 let versteckt = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) versteckt = Date.now(); else if (DB && versteckt && Date.now() - versteckt > 15 * 60e3) $('#iSperren').click(); else if (DB) neuDbPruefen('vordergrund'); });
 
-if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').then(reg => {
+  const pruef = () => { try { reg.update(); } catch (_) {} };   // Update-Prüfung: Start, Rückkehr in die App, stündlich
+  pruef(); document.addEventListener('visibilitychange', () => { if (!document.hidden) pruef(); }); setInterval(pruef, 3600e3);
+}).catch(() => {});
 if (!isSecureContext || !crypto.subtle) { ladeAus(); $('#startMeldung').textContent = 'Diese Seite muss über https geöffnet werden (Verschlüsselung).'; $('#startMeldung').classList.add('fehler'); }
 startVorbereiten();
 

@@ -11,6 +11,7 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
 <script src="theme.js"></script>
+<script src="update.js"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-src blob:; object-src blob:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>BEAK DB mini</title>
@@ -63,7 +64,7 @@
     </div>
     <button id="wZugriff" class="wbtn primary" hidden>Zugriff erlauben</button>
     <p id="startMeldung" class="meldung"></p>
-    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.4</p>
+    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.5</p>
   </div>
 </section>
 
@@ -237,7 +238,7 @@
     <h2>Einstellungen</h2>
     <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button><button id="iAbmelden" class="klein" hidden>Abmelden</button></div>
     <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span><button id="iGeraetAendern" class="klein" hidden>ändern</button></div>
-    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.4</span></div>
+    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.5</span></div>
     <div class="feld"><label>Anzeige</label><div class="umschalter theme" id="iTheme"><button type="button" data-t="system">System</button><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button></div></div>
     <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
     <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>
