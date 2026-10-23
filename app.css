@@ -465,7 +465,8 @@ html[data-theme=dark] .umschalter button { background:#1C1C1E; } html[data-theme
 .bild.bbild { flex:0 0 auto; width:120px; height:90px; border-radius:10px; cursor:default; position:relative; }
 .bild.bbild.dateien { cursor:pointer; }
 .bild.bbild.leer { font-size:12px; color:#aaa; }
-.bild.bbild .dzahl { font-size:11px; }
+.bild.bbild .dzahl { position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; padding:1px 6px; border-radius:9px; pointer-events:none; }
+.bild.bbild img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; margin:auto; }
 @media (max-width: 600px) { .bild.bbild { width:96px; height:72px; } }
 
 /* Anmeldung (Benutzer aus der PC-Datenbank) */
