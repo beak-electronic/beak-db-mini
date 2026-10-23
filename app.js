@@ -89,7 +89,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => { if (t.dataset.v === 
 // v98: oben nur die Reiter, die zum gewählten Artikel passen
 function tabsSetzen(v) { const a = aktArt, t = a ? (a.t || 1) : 0, stk = !!(a && DB && DB.bg[a.n]);
   const zeig = { artikel: true, info: true, buchen: !!a && t <= 1, stkl: stk, bg: stk, bgbuchen: t === 2 };
-  $$('.tab').forEach(b => { const k = b.dataset.v; b.hidden = !(zeig[k] || k === v); }); }
+  $$('.tab[data-v]').forEach(b => { const k = b.dataset.v; b.hidden = !(zeig[k] || k === v); }); abmeldenKopf(); }
 // v86: Tabs oben übernehmen den in der Artikel-Datei gewählten Artikel / die Baugruppe (wie die Buttons unten)
 function tabVorbelegen(v) {
   if (!DB || !aktArt) return;
@@ -214,7 +214,7 @@ function personZeigen() {
   zeige('person'); (l ? $('#fGeraet') : $('#fPerson')).focus();
 }
 function loginZeigen() {
-  const sel = $('#lName'), vor = ls.get('person');
+  const sel = $('#lName'), vor = ls.get('letzterLogin') || ls.get('person');
   sel.innerHTML = DB.u.map(u => `<option${u[0] === vor ? ' selected' : ''}>${esc(u[0])}</option>`).join('');
   $('#lKennwort').value = ''; $('#lMeldung').textContent = ''; $('#lMeldung').className = 'meldung';
   zeige('login'); setTimeout(() => (vor || DESKTOP ? $('#lKennwort') : sel).focus(), 50);
@@ -232,7 +232,7 @@ $('#lForm').addEventListener('submit', async e => {
   $('#bLogin').disabled = true; m.textContent = 'Prüfe …';
   try {
     if (!await kennwortPruefen(u, pw)) { m.textContent = 'Kennwort falsch – bitte erneut versuchen.'; m.classList.add('fehler'); $('#lKennwort').select(); return; }
-    sessionStorage.setItem('beak.login', u[0]); ls.set('person', u[0]); $('#lKennwort').value = ''; m.textContent = ''; nachLaden();
+    sessionStorage.setItem('beak.login', u[0]); ls.set('person', u[0]); ls.set('letzterLogin', u[0]); $('#lKennwort').value = ''; m.textContent = ''; nachLaden();
   } finally { $('#bLogin').disabled = false; }
 });
 function abmelden() { sessionStorage.removeItem('beak.login'); if (mitLogin()) loginZeigen(); }
@@ -293,7 +293,7 @@ function artikelZeigen(a) {
       <div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
-    <div class="buchbox${buAnz(a.n) > 0 ? ' alle' : ''}" title="Alle Buchungen anzeigen"><h3>Letzte Buchungen${buAnz(a.n) ? ` <span class="klein fix">(${nrFmt(buAnz(a.n))} gesamt – antippen für alle)</span>` : ''}</h3><div class="buchscroll">${bu ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div></div>
+    <div class="buchbox${buAnz(a.n) > 0 ? ' alle' : ''}" title="Alle Buchungen anzeigen"><h3>Letzte Buchungen${buAnz(a.n) ? '<span class="bumehr">  … mehr anzeigen</span>' : ''}</h3><div class="buchscroll">${bu ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div></div>
     <div class="unten">
       <div class="wert bem zu unbem" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
@@ -800,7 +800,7 @@ async function dateienZeigen(a, kbox = null) {
 // Letzte Buchungen (3) im Fenster „Artikel buchen“ – gleiche Tabelle wie Artikel-Datei, antippen → alle Buchungen
 function bBuchZeigen(a) { const b = $('#bBuch'); if (!b) return; b.hidden = !a; if (!a) { b.innerHTML = ''; return; }
   const n = buAnz(a.n); b.classList.toggle('alle', n > 0); b.title = n ? 'Alle Buchungen anzeigen' : '';
-  b.innerHTML = `<h3>Letzte Buchungen${n ? ` <span class="klein fix">(${nrFmt(n)} gesamt – antippen für alle)</span>` : ''}</h3>${(a.bu || []).length ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${a.bu.map(buZeile).join('')}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}`;
+  b.innerHTML = `<h3>Letzte Buchungen${n ? '<span class="bumehr">  … mehr anzeigen</span>' : ''}</h3>${(a.bu || []).length ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${a.bu.map(buZeile).join('')}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}`;
   b.onclick = () => { if (n) buchungenFenster(a); }; }
 function buchenBild(sel, a) {
   const box = $(sel); if (!box) return;
@@ -814,7 +814,7 @@ function betrachter(a, start) {
   let i = start; const n = a.f.length;
   const v = document.createElement('div'); v.id = 'betrachter'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true');
   const pfeil = d => `<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-  v.innerHTML = `<div class="bvkopf"><span class="bvname"></span><span class="bvzahl"></span><a class="bemzu bvdl" hidden title="Herunterladen" aria-label="Herunterladen"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></a><button type="button" class="bemzu bvzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div>
+  v.innerHTML = `<div class="bvkopf"><span class="bvname"></span><span class="bvzahl"></span><a class="bemzu bvdl bvneu" hidden target="_blank" rel="noopener" title="In neuem Fenster öffnen" aria-label="In neuem Fenster öffnen"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></a><a class="bemzu bvdl" hidden title="Herunterladen" aria-label="Herunterladen"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></a><button type="button" class="bemzu bvzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div>
     <div class="bvmitte"><button type="button" class="bvpfeil bvl" aria-label="Vorherige Datei">${pfeil('M15 5l-7 7 7 7')}</button><div class="bvinhalt"></div><button type="button" class="bvpfeil bvr" aria-label="Nächste Datei">${pfeil('M9 5l7 7-7 7')}</button></div>`;
   document.body.appendChild(v);
   v.querySelectorAll('.bvpfeil').forEach(b => b.hidden = n < 2);
@@ -825,7 +825,8 @@ function betrachter(a, start) {
     inh.innerHTML = '<div class="bvhinweis">Lädt …</div>';
     const dir = await ordnerHolen('bild'); const e = dir ? await dateiHolen(dir, rel) : { fehlt: true, name: rel };
     if (tok !== i || !v.isConnected) return;
-    const nm = esc(e.name); const dl = v.querySelector('.bvdl');
+    const nm = esc(e.name); const dl = v.querySelector('.bvdl:not(.bvneu)'), nw = v.querySelector('.bvneu');
+    nw.hidden = !(DESKTOP && !e.fehlt && istPdfName(e.name)); if (!nw.hidden) nw.href = e.url; else nw.removeAttribute('href');
     if (e.fehlt) { dl.hidden = true; dl.removeAttribute('href'); } else { dl.hidden = false; dl.href = e.url; dl.download = e.name.split('/').pop(); }
     if (e.fehlt) inh.innerHTML = `<div class="bvhinweis"><b>Datei nicht gefunden</b><br>${nm}<br><small>im Bilder-/Dokumente-Ordner „${esc(dir?.name || '')}“</small></div>`;
     else if (istBildName(e.name)) inh.innerHTML = `<img src="${e.url}" alt="${nm}">`;
@@ -857,3 +858,4 @@ if (DESKTOP) (() => {
 function themeKnoepfe() { const t = window.beakTheme ? beakTheme() : 'system'; $$('#iTheme button').forEach(b => b.classList.toggle('an', b.dataset.t === t)); }
 $('#iTheme')?.addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (!b || !window.beakTheme) return; beakTheme(b.dataset.t); themeKnoepfe(); });
 themeKnoepfe();
+$('#lName').addEventListener('change', () => $('#lKennwort').focus());   // Name gewählt → Kennwort (Bernd 23.10.)

@@ -411,7 +411,7 @@ html[data-theme=dark] { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3
 #betrachter .bvpfeil:hover { background:rgba(255,255,255,.3); }
 .bvdl { display:flex; align-items:center; justify-content:center; color:inherit; text-decoration:none; margin-left:auto; cursor:pointer; }
 .bvdl[hidden] { display:none; }
-.bvdl + .bvzu { margin-left:4px; }
+.bvdl + .bvzu, .bvneu + .bvdl { margin-left:4px; }
 #betrachter .bvdl { color:#fff; } #betrachter .bvdl:active { background:#FCE4F1; color:#D6006E; }
 /* v110: Einstellungen – Ordner-Knöpfe nebeneinander, dünne Trennlinien */
 #iOrdner .feld { flex-wrap:nowrap; align-items:center; }
@@ -493,3 +493,11 @@ table.letzte col.c-bs { width:5.4em; } table.letzte col.c-nm { width:30%; } tabl
 table.letzte td.r, table.letzte th.r { text-align:right; }
 .bbuch { margin:4px 0 8px; } .bbuch h3 { margin:2px 0; font-size:15px; } .bbuch table.letzte { font-size:13px; } .bbuch.alle { cursor:pointer; }
 .bbuch td, .bbuch th { padding:2px 4px; }
+.wlogin label { line-height:1.2; }
+.wlogin #bLogin { margin:calc(.85rem * 1.2 + 4px) 0 0; } /* gleicher Abstand wie Feld Name → Feld Kennwort */
+.bumehr { font-weight:400; color:var(--pink); font-size:12px; white-space:pre; } /* wie Bemerkung „… mehr anzeigen“ */
+/* Name-Auswahl beim Anmelden: eigener Pfeil mit Abstand zum rechten Rand (Bernd 23.10.) */
+.wlogin select { -webkit-appearance:none; appearance:none; padding-right:44px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important; background-position:right 16px center !important; background-size:18px !important; }
+#tabAbmelden svg { transform:scaleX(-1); } /* Pfeil nach rechts (Bernd 23.10.) */
