@@ -62,7 +62,7 @@
     </div>
     <button id="wZugriff" class="wbtn primary" hidden>Zugriff erlauben</button>
     <p id="startMeldung" class="meldung"></p>
-    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.0</p>
+    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.1</p>
   </div>
 </section>
 
@@ -116,20 +116,22 @@
   </div>
 </section>
 
-<!-- Artikel buchen (wie Windows "Artikel buchen", nur Interne Buchung) -->
+<!-- Artikel buchen (wie Windows "Artikel buchen": Interne Buchung oder Lieferanten-Zubuchung) -->
 <section id="v-buchen" class="ansicht" hidden>
   <div class="karte formular breit">
     <h2 id="bTitel">Zu buchenden Artikel auswählen</h2>
     <div class="feld"><label>Name:</label><span class="anz" id="bName"></span></div>
-    <div class="feld"><label>Modus</label><select id="bModus" disabled><option>Interne Buchung</option></select><span class="fix klein">Lieferanten-Zubuchung nur am PC</span></div>
+    <div class="feld"><label>Modus</label><select id="bModus"><option>Interne Buchung</option><option>Lieferanten-Zubuchung (Einkauf)</option></select></div>
     <div class="feld"><label>Suche Artikel-Nr / Volltext-Suche</label><input type="search" id="bArtikel" placeholder="BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
     <ul id="bListe" class="ergebnis klein"></ul>
-    <div class="artzeile" id="bArtZeile">
+    <div class="artbild"><div class="artzeile" id="bArtZeile">
       <div><label>Artikel-Nr</label><span id="bNr"></span></div>
       <div class="w2"><label>Artikel-Bezeichnung</label><span id="bBez"></span></div>
       <div><label>SYS-Bestand</label><span id="bSys"></span></div>
       <div class="w2"><label>Lagerort</label><span id="bLo"></span></div>
-    </div>
+    </div><div class="bild bbild" id="bBild"></div></div>
+    <div class="feld" id="bLiefFeld" hidden><label>Lieferant</label>
+      <div class="zeile"><select id="bLief"></select><span class="anz" id="bFirma"></span></div></div>
     <div class="feld"><label>Art der Buchung</label>
       <select id="bArt"><option>Lager-Bestand</option><option>SYS- und Lager-Bestand</option><option>System-Bestand</option></select></div>
     <div class="feld"><label>Buchung / Menge</label>
@@ -153,12 +155,12 @@
       <div class="feld"><label>Suche Artikel-Nr / Volltext-Suche</label><input type="search" id="qArtikel" placeholder="Baugruppe: BEAK-Nr. oder Volltext" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <p class="fix klein" id="qAnzahl"></p>
       <ul id="qListe" class="ergebnis klein"></ul>
-      <div class="artzeile">
+      <div class="artbild"><div class="artzeile">
         <div><label>Artikel-Nr</label><span id="qNr"></span></div>
         <div class="w2"><label>Artikel-Bezeichnung</label><span id="qBez"></span></div>
         <div><label>SYS-Bestand</label><span id="qSys"></span></div>
         <div class="w2"><label>Lagerort</label><span id="qLo"></span></div>
-      </div>
+      </div><div class="bild bbild" id="qBild"></div></div>
       <div class="feld"><label>Art der Buchung</label>
         <select id="qArt"><option>Lager-Bestand</option><option>SYS- und Lager-Bestand</option><option>System-Bestand</option></select></div>
       <div class="feld"><label>Buchung / Menge</label>
@@ -217,7 +219,7 @@
     <h2>Einstellungen</h2>
     <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button></div>
     <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span></div>
-    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.0</span></div>
+    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.1</span></div>
     <div class="feld"><label>Anzeige</label><div class="umschalter theme" id="iTheme"><button type="button" data-t="system">System</button><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button></div></div>
     <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
     <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>

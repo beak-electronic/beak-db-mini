@@ -70,6 +70,7 @@ function bild(i) {
 // ---------- Navigation ----------
 let VERLAUF = [], aktV = null, zurueckLaeuft = false;
 function zeige(v) {
+  if (v === 'buchen' && aktV !== 'buchen' && $('#bModus').selectedIndex !== 0) { $('#bModus').selectedIndex = 0; bModusSetzen(); }   // Bernd 23.10.: beim Öffnen immer „Interne Buchung“
   if (!zurueckLaeuft && aktV && aktV !== v && DB && !['start','person'].includes(aktV)) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); if (VERLAUF.length > 50) VERLAUF.shift(); }
   if (!DB || v === 'start' || v === 'person') VERLAUF = [];
   if (v !== 'start') ladeAus();
@@ -304,27 +305,57 @@ $('#sDruck').addEventListener('click', () => {
 // ---------- Artikel buchen (Windows "Artikel buchen", Modus Interne Buchung) ----------
 let bArt = null;
 const loBez = a => { const k = (a.lot || '').trim(); const t = (DB.lo || []).find(l => l[0] === k); return t ? t[1] : (a.lo || ''); };
+// Lieferanten-Zubuchung (wie Windows Modus "Einkauf"): Lieferant aus den Lieferanten DES Artikels (Hauptlieferant vorbelegt), nur (+);
+// EK/Einheit stehen nicht in der DB mini – am PC kommt der EK aus den Lieferantendaten des Artikels (wie am PC), ebenso die Auto-Bemerkung.
+const bEinkauf = () => $('#bModus').selectedIndex === 1;
+function bLiefFuellen() {
+  const l = bArt && Array.isArray(bArt.l) ? bArt.l.map((k, i) => ({ k: String(k || '').trim(), pos: Array.isArray(bArt.ln) ? bArt.ln[i] : null })).filter(x => x.k) : [];
+  $('#bLief').innerHTML = l.length ? l.map((x, i) => `<option value="${esc(x.k)}" data-pos="${x.pos ?? ''}">${esc(x.k)}${x.pos != null ? `  · Lieferant ${x.pos}` : ''}${i === 0 ? '  (Hauptlieferant)' : ''}</option>`).join('') : '<option value="">– kein Lieferant beim Artikel –</option>';
+  bFirma();
+}
+function bFirma() { const k = $('#bLief').value; $('#bFirma').textContent = k ? ((DB && DB.lf && DB.lf[k]) || '') : ''; }
+function bModusSetzen() {
+  const e = bEinkauf();
+  $('#bLiefFeld').hidden = !e;
+  if (e) { $('#bVz').value = '+'; if ($('#bArt').selectedIndex === 0) $('#bArt').selectedIndex = 1; }   // Einkauf: üblich SYS und Lager (wie PC), nur Zubuchung
+  $('#bVz').disabled = e;
+  $('#bBem').placeholder = e ? 'leer = EK / Einheit des Lieferanten (wird am PC eingesetzt)' : '';
+  bLiefFuellen(); bSchritt();
+}
 function bSchritt() {
   const m = parseFloat(String($('#bMenge').value).replace(',', '.')) || 0;
-  $('#bTitel').textContent = !bArt ? 'Zu buchenden Artikel auswählen' : m === 0 ? 'Menge eingeben' : 'Buchungs-Bemerkung eingeben / Buchen';
+  $('#bTitel').textContent = !bArt ? 'Zu buchenden Artikel auswählen' : bEinkauf() && !$('#bLief').value ? 'Lieferant auswählen' : m === 0 ? 'Menge eingeben' : 'Buchungs-Bemerkung eingeben / Buchen';
   $('#bInfo').textContent = bArt ? $('#bVz').selectedOptions[0].text : '';
 }
 function buchenArtikel(a) {
   if (a && (a.t || 1) > 1) { bArt = null; $('#bListe').innerHTML = ''; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); $('#bArtikel').value = String(a.n);
-    $('#bMeldung').textContent = 'Das ist eine Baugruppe – Baugruppen bitte über „BG buchen“ buchen.'; bSchritt(); return; }   // v96
+    buchenBild('#bBild', null); $('#bMeldung').textContent = 'Das ist eine Baugruppe – Baugruppen bitte über „BG buchen“ buchen.'; bSchritt(); return; }   // v96
   bArt = a; $('#bArtikel').value = String(a.n); $('#bListe').innerHTML = '';
   $('#bNr').textContent = nrFmt(a.n); $('#bBez').textContent = a.b || ''; $('#bSys').textContent = fmt2(a.sys);
   $('#bLo').textContent = [loBez(a), a.lot, a.lp].filter(Boolean).join(' · ');
-  $('#bMeldung').textContent = ''; bSchritt();
+  $('#bMeldung').textContent = ''; bLiefFuellen(); buchenBild('#bBild', a); bSchritt();
 }
 const fmt2 = v => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
-$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).filter(a => (a.t || 1) <= 1).slice(0, 40), null, buchenArtikel); });
+$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bLiefFuellen(); buchenBild('#bBild', null); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).filter(a => (a.t || 1) <= 1).slice(0, 40), null, buchenArtikel); });
 ['#bVz', '#bMenge'].forEach(x => $(x).addEventListener('input', bSchritt));
+$('#bModus').addEventListener('change', bModusSetzen);
+$('#bLief').addEventListener('change', () => { bFirma(); bSchritt(); });
 $('#bBuchen').addEventListener('click', () => {
   const m = $('#bMeldung'); m.className = 'meldung fehler';
   const menge = parseFloat(String($('#bMenge').value).replace(',', '.'));
   if (!bArt) { m.textContent = 'Bitte einen Artikel wählen.'; return; }
   if (!(menge > 0)) { m.textContent = 'Bitte die Menge eingeben.'; return; }
+  if (bEinkauf()) {
+    const lief = $('#bLief').value;
+    if (!lief) { m.textContent = 'Dieser Artikel hat keinen Lieferanten – Lieferanten-Zubuchung nicht möglich.'; return; }
+    // Buchungsdatei v3 (ältere PC-Versionen lehnen v3 als ungültig ab, statt sie falsch als interne Buchung zu buchen)
+    buchungSpeichern({ version: 3, art: 'Artikel', modus: 'Lieferanten-Zubuchung (Einkauf)', artDerBuchung: $('#bArt').value, vorzeichen: '+', vorzeichenText: '(+) Buchung',
+      lieferant: lief, lieferantPos: $('#bLief').selectedOptions[0].dataset.pos ? +$('#bLief').selectedOptions[0].dataset.pos : null, lieferantFirma: $('#bFirma').textContent || null,
+      artikelNr: bArt.n, bezeichnung: bArt.b, menge, kstNr: null, kstText: null,
+      lagerort: [loBez(bArt), bArt.lot, bArt.lp].filter(Boolean).join(' · ') || null, lagerortDetail: { bez: loBez(bArt) || null, kurz: bArt.lot || null, fach: bArt.lp || null }, bemerkung: $('#bBem').value.trim() || null },
+      `Lieferanten-Zubuchung: (+) ${fmt.format(menge)} × ${nrFmt(bArt.n)} ${bArt.b} von ${lief} (${$('#bArt').value})`);
+    $('#bMenge').value = '0'; $('#bBem').value = ''; bSchritt(); return;
+  }
   const vz = $('#bVz').value, kst = $('#bKst').value;
   buchungSpeichern({ art: 'Artikel', modus: 'Interne Buchung', artDerBuchung: $('#bArt').value, vorzeichen: vz, vorzeichenText: $('#bVz').selectedOptions[0].text,
     artikelNr: bArt.n, bezeichnung: bArt.b, menge, kstNr: kst ? +kst : null, kstText: kst ? $('#bKst').selectedOptions[0].text : null,
@@ -361,11 +392,11 @@ function qVorschau() {
   return t;
 }
 function qWaehlen(a) {
-  qBg = a; $('#qArtikel').value = String(a.n); $('#qListe').innerHTML = '';
+  qBg = a; $('#qArtikel').value = String(a.n); $('#qListe').innerHTML = ''; buchenBild('#qBild', a);
   $('#qNr').textContent = nrFmt(a.n); $('#qBez').textContent = a.b || ''; $('#qSys').textContent = fmt2(a.sys);
   $('#qLo').textContent = [loBez(a), a.lot, a.lp].filter(Boolean).join(' · '); $('#qMeldung').textContent = ''; qVorschau();
 }
-$('#qArtikel').addEventListener('input', () => { qBg = null; ['#qNr', '#qBez', '#qSys', '#qLo'].forEach(x => $(x).textContent = ''); qVorschau();
+$('#qArtikel').addEventListener('input', () => { qBg = null; buchenBild('#qBild', null); ['#qNr', '#qBez', '#qSys', '#qLo'].forEach(x => $(x).textContent = ''); qVorschau();
   liste($('#qListe'), BeakSuche.suche(BGTYP, $('#qArtikel').value).slice(0, 40), null, qWaehlen); });
 ['#qVz', '#qMenge'].forEach(x => $(x).addEventListener('input', qVorschau));
 $('#qBuchen').addEventListener('click', () => {
@@ -675,25 +706,35 @@ async function dateiHolen(dir, rel) {
   } catch { e = { fehlt: true, name }; }
   dateiCache.set(k, e); return e;
 }
-async function dateienZeigen(a) {
-  const tok = ++dateiTok;
+async function dateienZeigen(a, kbox = null) {
+  const tok = kbox ? (kbox._tok = (kbox._tok || 0) + 1) : ++dateiTok, aktuell = () => kbox ? kbox._tok === tok : tok === dateiTok;
   if (a.f) a.f = a.f.filter(x => istBildName(x) || istPdfName(x));   // nur Bilder + PDFs
   if (!DESKTOP || !a.f?.length) return;
-  const dir = await ordnerHolen('bild'); if (!dir || tok !== dateiTok) return;
-  const box = document.querySelector('#aDetail .bild'); if (!box) return;
+  const dir = await ordnerHolen('bild'); if (!dir || !aktuell()) return;
+  const box = kbox || document.querySelector('#aDetail .bild'); if (!box) return;
   if (!await ordnerRecht(dir, 'read', false)) {
     const b = document.createElement('button'); b.className = 'klein dzugriff'; b.textContent = 'Zugriff auf Bilder erlauben';
-    b.onclick = async ev => { ev.stopPropagation(); if (await ordnerRecht(dir, 'read', true)) dateienZeigen(a); };
+    b.onclick = async ev => { ev.stopPropagation(); if (await ordnerRecht(dir, 'read', true)) dateienZeigen(a, kbox); };
     box.appendChild(b); return;
   }
   const iBild = Math.max(0, a.f.findIndex(istBildName));
   const e = istBildName(a.f[iBild]) ? await dateiHolen(dir, a.f[iBild]) : null;
-  if (tok !== dateiTok || !box.isConnected) return;
+  if (!aktuell() || !box.isConnected) return;
   if (e && !e.fehlt) { box.classList.remove('leer'); box.innerHTML = `<img src="${e.url}" alt="Bild ${a.n}" draggable="false">`; }
   else if (!box.querySelector('img')) box.textContent = istPdfName(a.f[0]) ? 'PDF' : 'Datei';
   box.classList.add('dateien'); box.title = 'Klicken: alle verknüpften Dateien anzeigen';
   if (a.f.length > 1) box.insertAdjacentHTML('beforeend', `<span class="dzahl">${iBild + 1}/${a.f.length}</span>`);
   box.onclick = () => betrachter(a, iBild);
+}
+/** Bild im Buchen-Fenster (Artikel buchen / BG buchen): gleiche Quelle wie die Artikel-Datei – komprimiertes Bild, am Desktop mit
+ * verknüpftem Bilder-Ordner das erste Bild in voller Qualität, Klick öffnet den Betrachter. Fester Platz, ohne Bild dezenter Platzhalter. */
+function buchenBild(sel, a) {
+  const box = $(sel); if (!box) return;
+  box._tok = (box._tok || 0) + 1; box.onclick = null; box.title = ''; box.classList.remove('dateien');
+  const url = a && a.i != null ? bild(a.i) : null;
+  box.classList.toggle('leer', !url);
+  box.innerHTML = url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : (a ? 'kein Bild' : '');
+  if (a) dateienZeigen(a, box);
 }
 function betrachter(a, start) {
   let i = start; const n = a.f.length;
