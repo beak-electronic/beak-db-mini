@@ -139,14 +139,14 @@ async function dbAusOrdner(geste) {
 }
 async function ordnerAnzeige() {
   $('#iOrdner').hidden = !DESKTOP; if (!DESKTOP) return;
-  for (const k of ['db', 'buch']) { const h = await ordnerHolen(k); $('#iOrd-' + k).textContent = h ? h.name : 'nicht verknüpft'; $('#iOrdLoesen-' + k).hidden = !h; }
+  for (const k of ['db', 'buch', 'bild']) { const h = await ordnerHolen(k); $('#iOrd-' + k).textContent = h ? h.name : 'nicht verknüpft'; $('#iOrdLoesen-' + k).hidden = !h; }
 }
 if (DESKTOP) {
-  for (const k of ['db', 'buch']) {
+  for (const k of ['db', 'buch', 'bild']) {
     $('#iOrdWahl-' + k).addEventListener('click', async () => {
-      try { const h = await showDirectoryPicker({ id: 'beak-' + k, mode: k === 'db' ? 'read' : 'readwrite' }); await idbK('ordner-' + k, h); if (k === 'db') { dbOrdnerVerknuepft = true; bannerAus(); } ordnerAnzeige(); } catch (e) { if (e.name !== 'AbortError') alert(e.message); }
+      try { const h = await showDirectoryPicker({ id: 'beak-' + k, mode: k === 'buch' ? 'readwrite' : 'read' }); await idbK('ordner-' + k, h); if (k === 'bild') dateiCache.clear(); if (k === 'db') { dbOrdnerVerknuepft = true; bannerAus(); } ordnerAnzeige(); } catch (e) { if (e.name !== 'AbortError') alert(e.message); }
     });
-    $('#iOrdLoesen-' + k).addEventListener('click', async () => { await idbK('ordner-' + k, null); if (k === 'db') dbOrdnerVerknuepft = false; ordnerAnzeige(); });
+    $('#iOrdLoesen-' + k).addEventListener('click', async () => { await idbK('ordner-' + k, null); if (k === 'bild') dateiCache.clear(); if (k === 'db') dbOrdnerVerknuepft = false; ordnerAnzeige(); });
   }
   $('#wZugriff').addEventListener('click', () => { autoGeladen = false; dbAusOrdner(true); });
   ordnerHolen('db').then(h => { dbOrdnerVerknuepft = !!h; });
@@ -218,8 +218,8 @@ function artikelZeigen(a) {
       <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td>${esc(n)}</td><td>${esc(bem)}</td></tr>`).join('');
   $('#aDetail').innerHTML = `
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : '<select class="instkl" disabled><option>In Stückliste (0)</option></select>'; })()}</div>
-    <div class="bestand"><div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div>
-      <div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div></div>
+    <div class="bestand"><div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div>
+      <div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
     <div class="bemlief einspaltig">
@@ -230,6 +230,7 @@ function artikelZeigen(a) {
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
     </div>`;
   fotoEinpassen(true);
+  dateienZeigen(a);
   tabsSetzen('artikel');
   if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklZeigen(b); zeige('stkl'); } };
 }
@@ -239,11 +240,11 @@ let aktStkl = null;
 const refText = r => (r || []).map(x => x[0] || '').filter(Boolean).join(', ');
 $('#sSuche').addEventListener('input', () => liste($('#sListe'), suche($('#sSuche').value, true).slice(0, 60), aktStkl?.n, a => { stklZeigen(a); $('#sListe').innerHTML = ''; }));
 function stklZeilen(a) {
-  return (DB.bg[a.n] || []).map(([nr, anz, refs], i) => { const p = ART.get(nr) || {}; return { i: i + 1, nr, bez: p.b, anz, ref: refText(refs), lo: [p.lo, p.lot, p.lp].filter(Boolean).join(' '), ist: p.ist }; });
+  return (DB.bg[a.n] || []).map(([nr, anz, refs], i) => { const p = ART.get(nr) || {}; return { i: i + 1, nr, bez: p.b, anz, ref: refText(refs), lo: [p.lo, p.lot, p.lp].filter(Boolean).join(' '), ist: p.sys }; });
 }
 // v87: Stückliste sortierbar (Tipp auf Spaltenkopf, nochmal = umgekehrt, Pfeil zeigt die Sortierung)
 let sSort = { k: 'i', d: 1 };
-const S_SPALTEN = [['i', 'Pos', 'r'], ['nr', 'Artikel-Nr', 'r'], ['bez', 'Bezeichnung', ''], ['anz', 'Anz', 'r'], ['ref', 'Referenzen', ''], ['lo', 'Lagerort', ''], ['ist', 'Ist', 'r']];
+const S_SPALTEN = [['i', 'Pos', 'r'], ['nr', 'Artikel-Nr', 'r'], ['bez', 'Bezeichnung', ''], ['anz', 'Anz', 'r'], ['ref', 'Referenzen', ''], ['lo', 'Lagerort', ''], ['ist', 'Bestand', 'r']];
 const sKoll = new Intl.Collator('de-DE', { numeric: true, sensitivity: 'base' });
 function stklSortieren(z) {
   const { k, d } = sSort;
@@ -623,3 +624,85 @@ $('#zurueck').addEventListener('click', () => { const z = VERLAUF.pop(); if (!z)
   zurueckLaeuft = true;
   try { if (z.art) artikelZeigen(z.art); if (z.v === 'stkl' && z.stkl) stklZeigen(z.stkl); zeige(z.v); } finally { zurueckLaeuft = false; }
   $('#zurueck').hidden = !VERLAUF.length; });
+
+// Tastatur in Suchfeldern: Enter / Pfeil ab = ersten Treffer zeigen, Pfeiltasten = durch die Treffer gehen
+[['#aSuche', '#aListe'], ['#sSuche', '#sListe'], ['#bArtikel', '#bListe'], ['#gBg', '#gListe'], ['#qArtikel', '#qListe']].forEach(([f, l]) => {
+  const feld = $(f); if (!feld) return;
+  feld.addEventListener('keydown', e => {
+    const ul = $(l); if (!ul) return; const lis = [...ul.querySelectorAll('li')]; if (!lis.length) return;
+    let i = lis.findIndex(x => x.classList.contains('an'));
+    if (e.key === 'Enter') i = 0;
+    else if (e.key === 'ArrowDown') i = Math.min(lis.length - 1, i + 1);
+    else if (e.key === 'ArrowUp') { if (i < 0) return; i = Math.max(0, i - 1); }
+    else return;
+    e.preventDefault();
+    const li = lis[i]; lis.forEach(x => x.classList.toggle('an', x === li));
+    li.scrollIntoView({ block: 'nearest' }); li.click();
+    const neu = $(l).querySelector(`li[data-n="${li.dataset.n}"]`); if (neu) neu.classList.add('an');
+    feld.focus();
+  });
+});
+
+// ---------- v109: verknüpfte Dateien aus dem Bilder-/Dokumente-Ordner (nur Windows/Desktop) ----------
+// a.f = relative Pfade (\u2018/\u2019) unter dem Dokumenten-Basisordner der Windows-App; ohne Ordner/ohne Liste bleibt alles wie bisher.
+const dateiCache = new Map();   // rel (klein) → {url, typ, name} | {fehlt:true}
+let dateiTok = 0;
+const istBildName = n => /\.(jpe?g|png|gif|bmp|webp)$/i.test(n);
+const istPdfName = n => /\.pdf$/i.test(n);
+async function dateiHolen(dir, rel) {
+  const k = rel.toLowerCase(); if (dateiCache.has(k)) return dateiCache.get(k);
+  const teile = rel.split('/').filter(Boolean), name = teile.pop() || rel; let e;
+  try {
+    let d = dir; for (const t of teile) d = await d.getDirectoryHandle(t);
+    const f = await (await d.getFileHandle(name)).getFile();
+    const typ = istPdfName(name) ? 'application/pdf' : (f.type || '');
+    e = { url: URL.createObjectURL(typ ? new Blob([f], { type: typ }) : f), name, typ };
+  } catch { e = { fehlt: true, name }; }
+  dateiCache.set(k, e); return e;
+}
+async function dateienZeigen(a) {
+  const tok = ++dateiTok;
+  if (!DESKTOP || !a.f?.length) return;
+  const dir = await ordnerHolen('bild'); if (!dir || tok !== dateiTok) return;
+  const box = document.querySelector('#aDetail .bild'); if (!box) return;
+  if (!await ordnerRecht(dir, 'read', false)) {
+    const b = document.createElement('button'); b.className = 'klein dzugriff'; b.textContent = 'Zugriff auf Bilder erlauben';
+    b.onclick = async ev => { ev.stopPropagation(); if (await ordnerRecht(dir, 'read', true)) dateienZeigen(a); };
+    box.appendChild(b); return;
+  }
+  const iBild = Math.max(0, a.f.findIndex(istBildName));
+  const e = istBildName(a.f[iBild]) ? await dateiHolen(dir, a.f[iBild]) : null;
+  if (tok !== dateiTok || !box.isConnected) return;
+  if (e && !e.fehlt) { box.classList.remove('leer'); box.innerHTML = `<img src="${e.url}" alt="Bild ${a.n}" draggable="false">`; }
+  else if (!box.querySelector('img')) box.textContent = istPdfName(a.f[0]) ? 'PDF' : 'Datei';
+  box.classList.add('dateien'); box.title = 'Klicken: alle verknüpften Dateien anzeigen';
+  if (a.f.length > 1) box.insertAdjacentHTML('beforeend', `<span class="dzahl">${iBild + 1}/${a.f.length}</span>`);
+  box.onclick = () => betrachter(a, iBild);
+}
+function betrachter(a, start) {
+  let i = start; const n = a.f.length;
+  const v = document.createElement('div'); v.id = 'betrachter'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true');
+  const pfeil = d => `<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+  v.innerHTML = `<div class="bvkopf"><span class="bvname"></span><span class="bvzahl"></span><button type="button" class="bemzu bvzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div>
+    <div class="bvmitte"><button type="button" class="bvpfeil bvl" aria-label="Vorherige Datei">${pfeil('M15 5l-7 7 7 7')}</button><div class="bvinhalt"></div><button type="button" class="bvpfeil bvr" aria-label="Nächste Datei">${pfeil('M9 5l7 7-7 7')}</button></div>`;
+  document.body.appendChild(v);
+  v.querySelectorAll('.bvpfeil').forEach(b => b.hidden = n < 2);
+  const zu = () => { document.removeEventListener('keydown', taste, true); v.remove(); };
+  async function zeigen() {
+    const rel = a.f[i], tok = i, inh = v.querySelector('.bvinhalt');
+    v.querySelector('.bvname').textContent = rel; v.querySelector('.bvzahl').textContent = n > 1 ? `${i + 1}/${n}` : '';
+    inh.innerHTML = '<div class="bvhinweis">Lädt …</div>';
+    const dir = await ordnerHolen('bild'); const e = dir ? await dateiHolen(dir, rel) : { fehlt: true, name: rel };
+    if (tok !== i || !v.isConnected) return;
+    const nm = esc(e.name);
+    if (e.fehlt) inh.innerHTML = `<div class="bvhinweis"><b>Datei nicht gefunden</b><br>${nm}<br><small>im Bilder-/Dokumente-Ordner „${esc(dir?.name || '')}“</small></div>`;
+    else if (istBildName(e.name)) inh.innerHTML = `<img src="${e.url}" alt="${nm}">`;
+    else if (istPdfName(e.name)) inh.innerHTML = `<iframe src="${e.url}" title="${nm}"></iframe>`;
+    else inh.innerHTML = `<div class="bvhinweis"><b>${nm}</b><br>Dieser Dateityp kann hier nicht angezeigt werden.<br><a href="${e.url}" download="${nm}">Datei speichern</a></div>`;
+  }
+  const geh = d => { if (n < 2) return; i = (i + d + n) % n; zeigen(); };
+  function taste(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); zu(); } else if (e.key === 'ArrowLeft') { e.preventDefault(); geh(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); geh(1); } }
+  document.addEventListener('keydown', taste, true);
+  v.querySelector('.bvzu').onclick = zu; v.querySelector('.bvl').onclick = () => geh(-1); v.querySelector('.bvr').onclick = () => geh(1);
+  zeigen();
+}

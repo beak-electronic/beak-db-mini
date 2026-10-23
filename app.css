@@ -310,3 +310,69 @@ header#kopf > .neudb[hidden] { display:none; }
 .tabzurueck { align-self:center; margin-left:10px; margin-top:0; margin-bottom:0; display:inline-flex; align-items:center; justify-content:center; line-height:0; }
 .tabzurueck[hidden] { display:none; }
 .tabzurueck svg { display:block; }
+/* v109: X im Bemerkungsfenster rund (38px wie Zurück), Hinterlegung nur beim Drücken */
+.bemzu { width:38px; height:38px; min-width:38px; min-height:38px; border-radius:50%; background:transparent; border:0; padding:0; -webkit-tap-highlight-color:transparent; }
+.bemzu:active { background:#FCE4F1; }
+/* v109: Bezeichnung in Artikel-Datei immer 2 Zeilen hoch */
+#aDetail .dkopf .bez { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; line-height:1.25em; height:2.5em; flex:1 1 0; min-width:0; }
+
+/* v-dark: iOS-Blur oben weg (Lösung wie „Bauteile Suche“: opake Statusleiste, kein backdrop-filter in der Kopfzeile) */
+:root { color-scheme: light dark; }
+header#kopf::before, header#kopf.bf-tick::before { background:#fff; -webkit-backdrop-filter:none; backdrop-filter:none; transform:none; }
+
+/* Dark Mode automatisch nach Systemeinstellung */
+@media (prefers-color-scheme: dark) {
+  :root { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3A3C; --back:#000; --feld:#1C1C1E; --soft:#3A1428; }
+  body { background:var(--back); color:var(--fix); }
+  header#kopf { border-bottom-color:#3A3A3C; }
+  header#kopf::before, header#kopf.bf-tick::before { background:#1C1C1E; }
+  .tab { color:#E5E5EA; border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.06); }
+  .tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
+  button { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  button.pink, .wbtn.primary, .neudb .knopf.pink { background:var(--pink); border-color:var(--pink); color:#fff; }
+  input, select, textarea, select.instkl { background:#1C1C1E; color:var(--fix); border-color:#48484A; }
+  input::placeholder, textarea::placeholder { color:#8E8E93; }
+  .umschalter button { background:#1C1C1E; }
+  .umschalter button.an { background:var(--pink); color:#fff; }
+  .neudb.alt { background:#4A1430; color:#fff; }
+  td.buchen.nein .jn { background:#1C1C1E; color:#AEAEB2; border-color:#8E8E93; }
+  tr.aus td { color:#7C7C80; }
+  .meldung.fehler { color:#FF6B81; }
+  .wkarte, .bemkarte { background:#1C1C1E; color:var(--fix); }
+  .wsub, .wversion { color:#AEAEB2; }
+  .wtitel { color:#F2F2F7; }
+  .wbtn { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  .bemzu { background:transparent; color:#D1D1D6; }
+  .bemzu:active { background:#4A1430; }
+  table mark { background:#5A1838; color:#fff; }
+  .tabzurueck { background:#4A1430; }
+  .tabzurueck:active { background:#6A1E48; }
+  .toast { background:#3A3A3C; }
+  #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
+  .wkarte { border-color:rgba(255,255,255,.10); }
+  .wbeak .bl { color:#AEAEB2; }
+  .bemdlg { background:rgba(0,0,0,.55); }
+  /* Artikelfoto bleibt immer weiß hinterlegt */
+  .bild, .detail .bild.leer, .detail .bild img, .bild img { background:#fff; }
+  .bild.leer { color:#666; }
+  .detail .bild { background:#fff; }
+  .bild.leer, .detail .bild.leer { background:#fff; }
+}
+
+/* v109: verknüpfte Dateien (Windows) + Vollbild-Betrachter – Inhalt immer auf Weiß */
+.detail .bild.dateien { position:relative; cursor:zoom-in; }
+.detail .bild .dzahl { position:absolute; right:6px; bottom:6px; background:rgba(0,0,0,.6); color:#fff; font-size:12px; padding:1px 7px; border-radius:10px; pointer-events:none; }
+.detail .bild .dzugriff { position:absolute; left:50%; bottom:6px; transform:translateX(-50%); white-space:nowrap; }
+#betrachter { position:fixed; inset:0; z-index:2147483000; background:rgba(0,0,0,.88); display:flex; flex-direction:column; }
+#betrachter .bvkopf { display:flex; align-items:center; gap:12px; padding:8px 12px; color:#fff; }
+#betrachter .bvname { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+#betrachter .bvzahl { font-size:14px; opacity:.85; }
+#betrachter .bvzu { color:#fff; }
+#betrachter .bvzu:active { background:#FCE4F1; color:#D6006E; }
+#betrachter .bvmitte { flex:1; min-height:0; display:flex; align-items:center; gap:8px; padding:0 8px 12px; }
+#betrachter .bvinhalt { flex:1; height:100%; min-width:0; background:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#111; }
+#betrachter .bvinhalt img { max-width:100%; max-height:100%; object-fit:contain; }
+#betrachter .bvinhalt iframe { width:100%; height:100%; border:0; background:#fff; }
+#betrachter .bvhinweis { text-align:center; line-height:1.6; padding:20px; color:#374151; }
+#betrachter .bvpfeil { width:48px; height:48px; border-radius:50%; border:0; background:rgba(255,255,255,.15); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+#betrachter .bvpfeil:hover { background:rgba(255,255,255,.3); }
