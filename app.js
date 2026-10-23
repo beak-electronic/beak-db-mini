@@ -662,6 +662,7 @@ async function dateiHolen(dir, rel) {
 }
 async function dateienZeigen(a) {
   const tok = ++dateiTok;
+  if (a.f) a.f = a.f.filter(x => istBildName(x) || istPdfName(x));   // nur Bilder + PDFs
   if (!DESKTOP || !a.f?.length) return;
   const dir = await ordnerHolen('bild'); if (!dir || tok !== dateiTok) return;
   const box = document.querySelector('#aDetail .bild'); if (!box) return;
@@ -683,7 +684,7 @@ function betrachter(a, start) {
   let i = start; const n = a.f.length;
   const v = document.createElement('div'); v.id = 'betrachter'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true');
   const pfeil = d => `<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-  v.innerHTML = `<div class="bvkopf"><span class="bvname"></span><span class="bvzahl"></span><button type="button" class="bemzu bvzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div>
+  v.innerHTML = `<div class="bvkopf"><span class="bvname"></span><span class="bvzahl"></span><a class="bemzu bvdl" hidden title="Herunterladen" aria-label="Herunterladen"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></a><button type="button" class="bemzu bvzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div>
     <div class="bvmitte"><button type="button" class="bvpfeil bvl" aria-label="Vorherige Datei">${pfeil('M15 5l-7 7 7 7')}</button><div class="bvinhalt"></div><button type="button" class="bvpfeil bvr" aria-label="Nächste Datei">${pfeil('M9 5l7 7-7 7')}</button></div>`;
   document.body.appendChild(v);
   v.querySelectorAll('.bvpfeil').forEach(b => b.hidden = n < 2);
@@ -694,7 +695,8 @@ function betrachter(a, start) {
     inh.innerHTML = '<div class="bvhinweis">Lädt …</div>';
     const dir = await ordnerHolen('bild'); const e = dir ? await dateiHolen(dir, rel) : { fehlt: true, name: rel };
     if (tok !== i || !v.isConnected) return;
-    const nm = esc(e.name);
+    const nm = esc(e.name); const dl = v.querySelector('.bvdl');
+    if (e.fehlt) { dl.hidden = true; dl.removeAttribute('href'); } else { dl.hidden = false; dl.href = e.url; dl.download = e.name.split('/').pop(); }
     if (e.fehlt) inh.innerHTML = `<div class="bvhinweis"><b>Datei nicht gefunden</b><br>${nm}<br><small>im Bilder-/Dokumente-Ordner „${esc(dir?.name || '')}“</small></div>`;
     else if (istBildName(e.name)) inh.innerHTML = `<img src="${e.url}" alt="${nm}">`;
     else if (istPdfName(e.name)) inh.innerHTML = `<iframe src="${e.url}" title="${nm}"></iframe>`;
