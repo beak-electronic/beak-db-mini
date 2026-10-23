@@ -302,13 +302,13 @@ function artikelZeigen(a) {
   bemEinpassen();
   dateienZeigen(a);
   tabsSetzen('artikel');
-  if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklZeigen(b); zeige('stkl'); } };
+  if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklMark = a.n; stklZeigen(b); zeige('stkl'); setTimeout(() => $('#sDetail tr.markiert')?.scrollIntoView({ block: 'center' }), 50); } };
 }
 
 // ---------- Stückliste ----------
 let aktStkl = null;
 const refText = r => (r || []).map(x => x[0] || '').filter(Boolean).join(', ');
-$('#sSuche').addEventListener('input', () => liste($('#sListe'), suche($('#sSuche').value, true).slice(0, 60), aktStkl?.n, a => { stklZeigen(a); $('#sListe').innerHTML = ''; }));
+$('#sSuche').addEventListener('input', () => liste($('#sListe'), suche($('#sSuche').value, true).slice(0, 60), aktStkl?.n, a => { stklMark = null; stklZeigen(a); $('#sListe').innerHTML = ''; }));
 function stklZeilen(a) {
   return (DB.bg[a.n] || []).map(([nr, anz, refs], i) => { const p = ART.get(nr) || {}; return { i: i + 1, nr, bez: p.b, anz, ref: refText(refs), lo: [p.lo, p.lot, p.lp].filter(Boolean).join(' '), ist: p.sys }; });
 }
@@ -322,6 +322,7 @@ function stklSortieren(z) {
     const leerA = a == null || a === '', leerB = b == null || b === ''; if (leerA || leerB) return leerA - leerB;
     return (typeof a === 'number' && typeof b === 'number' ? a - b : sKoll.compare(String(a), String(b))) * d || x.i - y.i; });
 }
+let stklMark = null;   // Artikel, von dem aus „In Stückliste“ gewählt wurde → Zeile hinterlegen
 function stklTabelle(z, berechnet, sortierbar) {
   const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${sSort.k === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${sSort.k === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
   // v95: nach Referenzen sortiert → je Referenz eine Zeile
@@ -336,7 +337,7 @@ function stklTabelle(z, berechnet, sortierbar) {
       } else z = z.filter(r => { const t = `${r.nr} ${nrFmt(r.nr)} ${r.bez || ''}`.toLowerCase(); return w.every(x => t.includes(x)); }); } }
   if (sortierbar) z = stklSortieren(z);
   return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
-    ${z.map(r => `<tr><td class="r">${r.i}</td><td class="r w"><span class="artlink" data-art="${r.nr}">${nrFmt(r.nr)}</span></td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
+    ${z.map(r => `<tr${sortierbar && stklMark != null && String(r.nr) === String(stklMark) ? ' class="markiert"' : ''}><td class="r">${r.i}</td><td class="r w"><span class="artlink" data-art="${r.nr}">${nrFmt(r.nr)}</span></td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
 }
 function stklZeigen(a) {
   if (a !== aktStkl && $('#sFilter')) $('#sFilter').value = '';

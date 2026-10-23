@@ -508,3 +508,7 @@ table.letzte td.r, table.letzte th.r { text-align:right; }
   box-shadow:0 4px 18px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.14); max-width:calc(100vw - 24px); white-space:nowrap; pointer-events:auto; }
 #update-hint button, html[data-theme] #update-hint button { border:0; border-radius:8px; min-height:36px; padding:0 14px; background:var(--pink); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 #update-hint button:active { background:var(--pink2); }
+/* Stückliste: Zeile des Artikels, von dem aus „In Stückliste“ gewählt wurde (Farbe wie Zurück-Pfeil) */
+#sDetail tr.markiert td { background:#FCE4F1; }
+@media (prefers-color-scheme: dark) { html:not([data-theme=light]) #sDetail tr.markiert td { background:#4A1430; } }
+html[data-theme=dark] #sDetail tr.markiert td { background:#4A1430; }
