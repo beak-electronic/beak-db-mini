@@ -72,6 +72,7 @@ let VERLAUF = [], aktV = null, zurueckLaeuft = false;
 function zeige(v) {
   if (!zurueckLaeuft && aktV && aktV !== v && DB && !['start','person'].includes(aktV)) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); if (VERLAUF.length > 50) VERLAUF.shift(); }
   if (!DB || v === 'start' || v === 'person') VERLAUF = [];
+  if (v !== 'start') ladeAus();
   aktV = v; if ($('#zurueck')) $('#zurueck').hidden = !VERLAUF.length;
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
@@ -100,6 +101,9 @@ function tabVorbelegen(v) {
   } catch (e) { console.warn(e); }
 }
 
+// ---------- Start-Ladeschirm ----------
+function ladeAus() { const l = document.getElementById('ladeSchirm'); if (!l || l.classList.contains('aus')) return; l.classList.add('aus'); setTimeout(() => l.remove(), 200); }
+setTimeout(ladeAus, 8000);   // Sicherheits-Timeout
 // ---------- Start ----------
 let datei = null;   // ArrayBuffer der gewählten (noch verschlüsselten) Datei
 async function startVorbereiten() {
@@ -108,7 +112,7 @@ async function startVorbereiten() {
   zeige('start'); setTimeout(() => $('#fKennwort').focus(), 50);
   const gpw = await pwHolen(); $('#bPwWeg').hidden = !gpw;
   if (DESKTOP && !autoGeladen && await dbAusOrdner(false)) return;
-  if (c && gpw) oeffnen(gpw);
+  if (c && gpw) oeffnen(gpw); else ladeAus();
 }
 // ---------- v101: Ordner verknüpfen (Windows/Desktop, File System Access API) ----------
 const DESKTOP = typeof window.showDirectoryPicker === 'function';
@@ -124,18 +128,18 @@ async function dbAusOrdner(geste) {
   const dir = await ordnerHolen('db'); dbOrdnerVerknuepft = !!dir; if (!dir) return false;
   const m = $('#startMeldung'), btn = $('#wZugriff');
   try {
-    if (!await ordnerRecht(dir, 'read', geste)) { btn.hidden = false; m.className = 'meldung'; m.textContent = `Datenbank-Ordner „${dir.name}“ verknüpft – einmal „Zugriff erlauben“ klicken.`; return true; }
+    if (!await ordnerRecht(dir, 'read', geste)) { btn.hidden = false; m.className = 'meldung'; m.textContent = `Datenbank-Ordner „${dir.name}“ verknüpft – einmal „Zugriff erlauben“ klicken.`; ladeAus(); return true; }
     btn.hidden = true;
     let best = null;
     for await (const h of dir.values()) if (h.kind === 'file' && /\.beakdb$/i.test(h.name)) { const f = await h.getFile(); if (!best || f.lastModified > best.lastModified) best = f; }
-    if (!best) { m.className = 'meldung fehler'; m.textContent = `Im Ordner „${dir.name}“ liegt keine .beakdb-Datei.`; return false; }
+    if (!best) { m.className = 'meldung fehler'; m.textContent = `Im Ordner „${dir.name}“ liegt keine .beakdb-Datei.`; ladeAus(); return false; }
     autoGeladen = true;
     datei = await best.arrayBuffer(); datei._name = best.name;
     $('#dbStand').textContent = `Aus Ordner „${dir.name}“: ${best.name} (${(best.size / 1048576).toFixed(1)} MB, ${new Date(best.lastModified).toLocaleString('de-DE')})`;
     $('#wKennwort').hidden = false; m.className = 'meldung'; m.textContent = '';
-    const gpw = await pwHolen(); if (gpw) oeffnen(gpw); else setTimeout(() => $('#fKennwort').focus(), 50);
+    const gpw = await pwHolen(); if (gpw) oeffnen(gpw); else { ladeAus(); setTimeout(() => $('#fKennwort').focus(), 50); }
     return true;
-  } catch (e) { console.warn(e); m.className = 'meldung fehler'; m.textContent = 'Datenbank-Ordner nicht lesbar: ' + e.message; return false; }
+  } catch (e) { console.warn(e); m.className = 'meldung fehler'; m.textContent = 'Datenbank-Ordner nicht lesbar: ' + e.message; ladeAus(); return false; }
 }
 async function ordnerAnzeige() {
   $('#iOrdner').hidden = !DESKTOP; if (!DESKTOP) return;
@@ -162,7 +166,7 @@ $('#fDatei').addEventListener('change', async e => {
 async function oeffnen(gespeichert) {
   if (typeof gespeichert !== 'string') gespeichert = null;
   const m = $('#startMeldung'); m.className = 'meldung';
-  if (!datei) { m.textContent = 'Bitte zuerst die Datenbank aus iCloud Drive wählen.'; m.classList.add('fehler'); return; }
+  if (!datei) { m.textContent = 'Bitte zuerst die Datenbank aus iCloud Drive wählen.'; m.classList.add('fehler'); ladeAus(); return; }
   const pw = gespeichert || $('#fKennwort').value; if (!pw) { m.textContent = 'Bitte das Kennwort eingeben.'; m.classList.add('fehler'); return; }
   $('#bOeffnen').disabled = true; m.textContent = gespeichert ? 'Öffne mit gespeichertem Kennwort …' : 'Entschlüssele …';
   try {
@@ -177,7 +181,7 @@ async function oeffnen(gespeichert) {
     $('#fKennwort').value = ''; m.textContent = '';
     if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'Gerät'; $('#fPerson').focus(); }
     else { zeige('artikel'); artikelSuchen(); }
-  } catch (err) { if (gespeichert) { await pwVergessen(); m.textContent = 'Das gespeicherte Kennwort passt nicht (mehr) – bitte neu eingeben.'; } else m.textContent = err.message; m.classList.add('fehler'); }
+  } catch (err) { if (gespeichert) { await pwVergessen(); m.textContent = 'Das gespeicherte Kennwort passt nicht (mehr) – bitte neu eingeben.'; } else m.textContent = err.message; m.classList.add('fehler'); ladeAus(); }
   finally { $('#bOeffnen').disabled = false; }
 }
 $('#bOeffnen').addEventListener('click', () => oeffnen());
@@ -222,14 +226,13 @@ function artikelZeigen(a) {
       <div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
-    <div class="bemlief einspaltig">
-      <div class="wert breit bem zu" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
-    </div>
+    <div class="buchbox"><h3>Letzte Buchungen</h3><div class="buchscroll">${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div></div>
     <div class="unten">
-      <div><h3>Letzte Buchungen</h3>${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div>
+      <div class="wert bem zu unbem" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
     </div>`;
   fotoEinpassen(true);
+  bemEinpassen();
   dateienZeigen(a);
   tabsSetzen('artikel');
   if ($('#aInStkl')) $('#aInStkl').onchange = e => { const b = ART.get(isNaN(+e.target.value) ? e.target.value : +e.target.value) || ART.get(e.target.value); e.target.value = ''; if (b) { stklZeigen(b); zeige('stkl'); } };
@@ -504,7 +507,7 @@ let versteckt = 0;
 document.addEventListener('visibilitychange', () => { if (document.hidden) versteckt = Date.now(); else if (DB && versteckt && Date.now() - versteckt > 15 * 60e3) $('#iSperren').click(); else if (DB) neuDbPruefen('vordergrund'); });
 
 if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
-if (!isSecureContext || !crypto.subtle) { $('#startMeldung').textContent = 'Diese Seite muss über https geöffnet werden (Verschlüsselung).'; $('#startMeldung').classList.add('fehler'); }
+if (!isSecureContext || !crypto.subtle) { ladeAus(); $('#startMeldung').textContent = 'Diese Seite muss über https geöffnet werden (Verschlüsselung).'; $('#startMeldung').classList.add('fehler'); }
 startVorbereiten();
 
 /* v76: Mengen-/Anzahl-Feld antippen → Inhalt (z. B. „0“) markieren, damit direkt überschrieben wird (iOS-sicher) */
@@ -531,8 +534,19 @@ const bemFenster = txt => { let d = document.getElementById('bemDlg');
   d.querySelector('.bemtext').textContent = txt; d.hidden = false; };
 document.addEventListener('click', e => { const b = e.target.closest('.wert.bem.lang'); if (b) bemFenster(b.querySelector('span').textContent); });
 document.addEventListener('click', e => { const l = e.target.closest('.wert.lieflist'); if (l) l.classList.toggle('auf'); });   // v81: lange Lieferanten-Liste antippen
-const bemPruefen = () => document.querySelectorAll('.wert.bem').forEach(b => { const s = b.querySelector('span'); if (!s) return;
+const bemPruefen = () => document.querySelectorAll('.wert.bem:not(.unbem)').forEach(b => { const s = b.querySelector('span'); if (!s) return;
   const war = b.classList.contains('zu'); b.classList.add('zu'); b.classList.toggle('lang', s.scrollHeight > s.clientHeight + 2); if (!war) b.classList.remove('zu'); });
+// v111: Bemerkung unten neben dem Bild – füllt die feste Fläche mit ganzen Zeilen, Rest „… mehr anzeigen“ (Fenster)
+function bemEinpassen() { const b = document.querySelector('#aDetail .wert.bem.unbem'); if (!b) return; const s = b.querySelector('span'), l = b.querySelector('label');
+  const d = $('#aDetail'), u = d.querySelector('.unten'), bi = d.querySelector('.bild'); d.style.removeProperty('--buchh');   // wenig Höhe: Buchungsliste kürzer, Bild darf nie hineinragen
+  const k = innerWidth + 'x' + innerHeight;
+  if (u && bi && bemEinpassen.k !== k) { const fehlt = bi.getBoundingClientRect().height - u.getBoundingClientRect().height; bemEinpassen.k = k; bemEinpassen.h = fehlt > 0 ? Math.max(78, Math.floor(156 - fehlt - 1)) : 0; }
+  if (bemEinpassen.h) d.style.setProperty('--buchh', bemEinpassen.h + 'px');
+  s.style.maxHeight = ''; const lh = parseFloat(getComputedStyle(s).lineHeight) || 18;
+  const frei = b.clientHeight - l.offsetHeight - 4, n = Math.max(1, Math.floor(frei / lh));
+  s.style.maxHeight = s.style.height = n * lh + 'px'; b.classList.toggle('lang', s.scrollHeight > n * lh + 2); }
+addEventListener('resize', () => requestAnimationFrame(bemEinpassen));
+document.fonts?.ready.then(() => bemEinpassen());
 new MutationObserver(() => requestAnimationFrame(bemPruefen)).observe(document.body, { childList: true, subtree: true });
 
 /* v81: „Neue Datenbankversion verfügbar? – jetzt laden“. iOS/Safari erlaubt keinen dauerhaften Dateizugriff (kein File System Access API,
@@ -627,15 +641,16 @@ $('#zurueck').addEventListener('click', () => { const z = VERLAUF.pop(); if (!z)
 
 // Tastatur in Suchfeldern: Enter / Pfeil ab = ersten Treffer zeigen, Pfeiltasten = durch die Treffer gehen
 [['#aSuche', '#aListe'], ['#sSuche', '#sListe'], ['#bArtikel', '#bListe'], ['#gBg', '#gListe'], ['#qArtikel', '#qListe']].forEach(([f, l]) => {
-  const feld = $(f); if (!feld) return;
+  const feld = $(f); if (!feld) return; let pfeil = false;
+  feld.addEventListener('input', () => { pfeil = false; });
   feld.addEventListener('keydown', e => {
     const ul = $(l); if (!ul) return; const lis = [...ul.querySelectorAll('li')]; if (!lis.length) return;
     let i = lis.findIndex(x => x.classList.contains('an'));
-    if (e.key === 'Enter') i = 0;
+    if (e.key === 'Enter') i = pfeil && i >= 0 ? i : 0;
     else if (e.key === 'ArrowDown') i = Math.min(lis.length - 1, i + 1);
     else if (e.key === 'ArrowUp') { if (i < 0) return; i = Math.max(0, i - 1); }
     else return;
-    e.preventDefault();
+    e.preventDefault(); if (e.key !== 'Enter') pfeil = true;
     const li = lis[i]; lis.forEach(x => x.classList.toggle('an', x === li));
     li.scrollIntoView({ block: 'nearest' }); li.click();
     const neu = $(l).querySelector(`li[data-n="${li.dataset.n}"]`); if (neu) neu.classList.add('an');
@@ -708,3 +723,22 @@ function betrachter(a, start) {
   v.querySelector('.bvzu').onclick = zu; v.querySelector('.bvl').onclick = () => geh(-1); v.querySelector('.bvr').onclick = () => geh(1);
   zeigen();
 }
+
+// ---------- Desktop: Cursor in der Artikel-Datei immer im Suchfeld (iPad unverändert – sonst Tastatur) ----------
+if (DESKTOP) (() => {
+  const offen = () => ['#ladeSchirm', '#dlg', '#bemDlg', '#betrachter', '[role="dialog"]', '[aria-modal="true"]'].some(s => [...document.querySelectorAll(s)].some(e => !e.hidden && e.offsetParent !== null || (e.id === 'ladeSchirm' && !e.classList.contains('aus'))));
+  const fremd = () => { const a = document.activeElement; return a && a !== document.body && a.id !== 'aSuche' && a.matches('input, select, textarea, [contenteditable="true"]'); };
+  const fokus = () => { if (aktV !== 'artikel' || !DB || document.hidden || offen() || fremd()) return; const f = $('#aSuche'); if (f && document.activeElement !== f) { f.focus({ preventScroll: true }); f.select(); } };
+  let t = 0; const bald = () => { clearTimeout(t); t = setTimeout(fokus, 60); };
+  addEventListener('focus', bald); addEventListener('pageshow', bald);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) bald(); });
+  new MutationObserver(bald).observe(document.body, { attributes: true, attributeFilter: ['hidden', 'class'], childList: true, subtree: true });
+  document.addEventListener('keydown', e => {   // druckbares Zeichen bei leerem Fokus → ins Suchfeld
+    if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey || aktV !== 'artikel' || offen() || fremd() || document.activeElement?.id === 'aSuche') return;
+    const f = $('#aSuche'); f.focus({ preventScroll: true }); f.select(); });
+})();
+
+// v112: Anzeige System/Hell/Dunkel (theme.js setzt html[data-theme] schon vor dem Laden)
+function themeKnoepfe() { const t = window.beakTheme ? beakTheme() : 'system'; $$('#iTheme button').forEach(b => b.classList.toggle('an', b.dataset.t === t)); }
+$('#iTheme')?.addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (!b || !window.beakTheme) return; beakTheme(b.dataset.t); themeKnoepfe(); });
+themeKnoepfe();

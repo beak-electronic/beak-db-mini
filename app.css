@@ -322,42 +322,75 @@ header#kopf::before, header#kopf.bf-tick::before { background:#fff; -webkit-back
 
 /* Dark Mode automatisch nach Systemeinstellung */
 @media (prefers-color-scheme: dark) {
-  :root { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3A3C; --back:#000; --feld:#1C1C1E; --soft:#3A1428; }
-  body { background:var(--back); color:var(--fix); }
-  header#kopf { border-bottom-color:#3A3A3C; }
-  header#kopf::before, header#kopf.bf-tick::before { background:#1C1C1E; }
-  .tab { color:#E5E5EA; border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.06); }
-  .tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
-  button { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
-  button.pink, .wbtn.primary, .neudb .knopf.pink { background:var(--pink); border-color:var(--pink); color:#fff; }
-  input, select, textarea, select.instkl { background:#1C1C1E; color:var(--fix); border-color:#48484A; }
-  input::placeholder, textarea::placeholder { color:#8E8E93; }
-  .umschalter button { background:#1C1C1E; }
-  .umschalter button.an { background:var(--pink); color:#fff; }
-  .neudb.alt { background:#4A1430; color:#fff; }
-  td.buchen.nein .jn { background:#1C1C1E; color:#AEAEB2; border-color:#8E8E93; }
-  tr.aus td { color:#7C7C80; }
-  .meldung.fehler { color:#FF6B81; }
-  .wkarte, .bemkarte { background:#1C1C1E; color:var(--fix); }
-  .wsub, .wversion { color:#AEAEB2; }
-  .wtitel { color:#F2F2F7; }
-  .wbtn { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
-  .bemzu { background:transparent; color:#D1D1D6; }
-  .bemzu:active { background:#4A1430; }
-  table mark { background:#5A1838; color:#fff; }
-  .tabzurueck { background:#4A1430; }
-  .tabzurueck:active { background:#6A1E48; }
-  .toast { background:#3A3A3C; }
-  #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
-  .wkarte { border-color:rgba(255,255,255,.10); }
-  .wbeak .bl { color:#AEAEB2; }
-  .bemdlg { background:rgba(0,0,0,.55); }
-  /* Artikelfoto bleibt immer weiß hinterlegt */
-  .bild, .detail .bild.leer, .detail .bild img, .bild img { background:#fff; }
-  .bild.leer { color:#666; }
-  .detail .bild { background:#fff; }
-  .bild.leer, .detail .bild.leer { background:#fff; }
+  html:not([data-theme=light]) { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3A3C; --back:#000; --feld:#1C1C1E; --soft:#3A1428; }
+  html:not([data-theme=light]) body { background:var(--back); color:var(--fix); }
+  html:not([data-theme=light]) header#kopf { border-bottom-color:#3A3A3C; }
+  html:not([data-theme=light]) header#kopf::before, html:not([data-theme=light]) header#kopf.bf-tick::before { background:#1C1C1E; }
+  html:not([data-theme=light]) .tab { color:#E5E5EA; border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.06); }
+  html:not([data-theme=light]) .tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
+  html:not([data-theme=light]) button { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  html:not([data-theme=light]) button.pink, html:not([data-theme=light]) .wbtn.primary, html:not([data-theme=light]) .neudb .knopf.pink { background:var(--pink); border-color:var(--pink); color:#fff; }
+  html:not([data-theme=light]) input, html:not([data-theme=light]) select, html:not([data-theme=light]) textarea, html:not([data-theme=light]) select.instkl { background:#1C1C1E; color:var(--fix); border-color:#48484A; }
+  html:not([data-theme=light]) input::placeholder, html:not([data-theme=light]) textarea::placeholder { color:#8E8E93; }
+  html:not([data-theme=light]) .umschalter button { background:#1C1C1E; }
+  html:not([data-theme=light]) .umschalter button.an { background:var(--pink); color:#fff; }
+  html:not([data-theme=light]) .neudb.alt { background:#4A1430; color:#fff; }
+  html:not([data-theme=light]) td.buchen.nein .jn { background:#1C1C1E; color:#AEAEB2; border-color:#8E8E93; }
+  html:not([data-theme=light]) tr.aus td { color:#7C7C80; }
+  html:not([data-theme=light]) .meldung.fehler { color:#FF6B81; }
+  html:not([data-theme=light]) .wkarte, html:not([data-theme=light]) .bemkarte { background:#1C1C1E; color:var(--fix); }
+  html:not([data-theme=light]) .wsub, html:not([data-theme=light]) .wversion { color:#AEAEB2; }
+  html:not([data-theme=light]) .wtitel { color:#F2F2F7; }
+  html:not([data-theme=light]) .wbtn { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  html:not([data-theme=light]) .bemzu { background:transparent; color:#D1D1D6; }
+  html:not([data-theme=light]) .bemzu:active { background:#4A1430; }
+  html:not([data-theme=light]) table mark { background:#5A1838; color:#fff; }
+  html:not([data-theme=light]) .tabzurueck { background:#4A1430; }
+  html:not([data-theme=light]) .tabzurueck:active { background:#6A1E48; }
+  html:not([data-theme=light]) .toast { background:#3A3A3C; }
+  html:not([data-theme=light]) #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
+  html:not([data-theme=light]) .wkarte { border-color:rgba(255,255,255,.10); }
+  html:not([data-theme=light]) .wbeak .bl { color:#AEAEB2; }
+  html:not([data-theme=light]) .bemdlg { background:rgba(0,0,0,.55); }
+  html:not([data-theme=light]) .bild, html:not([data-theme=light]) .detail .bild.leer, html:not([data-theme=light]) .detail .bild img, html:not([data-theme=light]) .bild img { background:#fff; }
+  html:not([data-theme=light]) .bild.leer { color:#666; }
+  html:not([data-theme=light]) .detail .bild { background:#fff; }
+  html:not([data-theme=light]) .bild.leer, html:not([data-theme=light]) .detail .bild.leer { background:#fff; }
 }
+html[data-theme=dark] { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3A3C; --back:#000; --feld:#1C1C1E; --soft:#3A1428; }
+  html[data-theme=dark] body { background:var(--back); color:var(--fix); }
+  html[data-theme=dark] header#kopf { border-bottom-color:#3A3A3C; }
+  html[data-theme=dark] header#kopf::before, html[data-theme=dark] header#kopf.bf-tick::before { background:#1C1C1E; }
+  html[data-theme=dark] .tab { color:#E5E5EA; border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.06); }
+  html[data-theme=dark] .tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
+  html[data-theme=dark] button { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  html[data-theme=dark] button.pink, html[data-theme=dark] .wbtn.primary, html[data-theme=dark] .neudb .knopf.pink { background:var(--pink); border-color:var(--pink); color:#fff; }
+  html[data-theme=dark] input, html[data-theme=dark] select, html[data-theme=dark] textarea, html[data-theme=dark] select.instkl { background:#1C1C1E; color:var(--fix); border-color:#48484A; }
+  html[data-theme=dark] input::placeholder, html[data-theme=dark] textarea::placeholder { color:#8E8E93; }
+  html[data-theme=dark] .umschalter button { background:#1C1C1E; }
+  html[data-theme=dark] .umschalter button.an { background:var(--pink); color:#fff; }
+  html[data-theme=dark] .neudb.alt { background:#4A1430; color:#fff; }
+  html[data-theme=dark] td.buchen.nein .jn { background:#1C1C1E; color:#AEAEB2; border-color:#8E8E93; }
+  html[data-theme=dark] tr.aus td { color:#7C7C80; }
+  html[data-theme=dark] .meldung.fehler { color:#FF6B81; }
+  html[data-theme=dark] .wkarte, html[data-theme=dark] .bemkarte { background:#1C1C1E; color:var(--fix); }
+  html[data-theme=dark] .wsub, html[data-theme=dark] .wversion { color:#AEAEB2; }
+  html[data-theme=dark] .wtitel { color:#F2F2F7; }
+  html[data-theme=dark] .wbtn { background:#2C2C2E; color:var(--fix); border-color:#48484A; }
+  html[data-theme=dark] .bemzu { background:transparent; color:#D1D1D6; }
+  html[data-theme=dark] .bemzu:active { background:#4A1430; }
+  html[data-theme=dark] table mark { background:#5A1838; color:#fff; }
+  html[data-theme=dark] .tabzurueck { background:#4A1430; }
+  html[data-theme=dark] .tabzurueck:active { background:#6A1E48; }
+  html[data-theme=dark] .toast { background:#3A3A3C; }
+  html[data-theme=dark] #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
+  html[data-theme=dark] .wkarte { border-color:rgba(255,255,255,.10); }
+  html[data-theme=dark] .wbeak .bl { color:#AEAEB2; }
+  html[data-theme=dark] .bemdlg { background:rgba(0,0,0,.55); }
+  html[data-theme=dark] .bild, html[data-theme=dark] .detail .bild.leer, html[data-theme=dark] .detail .bild img, html[data-theme=dark] .bild img { background:#fff; }
+  html[data-theme=dark] .bild.leer { color:#666; }
+  html[data-theme=dark] .detail .bild { background:#fff; }
+  html[data-theme=dark] .bild.leer, html[data-theme=dark] .detail .bild.leer { background:#fff; }
 
 /* v109: verknüpfte Dateien (Windows) + Vollbild-Betrachter – Inhalt immer auf Weiß */
 .detail .bild.dateien { position:relative; cursor:zoom-in; }
@@ -380,3 +413,48 @@ header#kopf::before, header#kopf.bf-tick::before { background:#fff; -webkit-back
 .bvdl[hidden] { display:none; }
 .bvdl + .bvzu { margin-left:4px; }
 #betrachter .bvdl { color:#fff; } #betrachter .bvdl:active { background:#FCE4F1; color:#D6006E; }
+/* v110: Einstellungen – Ordner-Knöpfe nebeneinander, dünne Trennlinien */
+#iOrdner .feld { flex-wrap:nowrap; align-items:center; }
+.ordkn { display:flex; gap:8px; margin-left:auto; flex-shrink:0; }
+.ordkn > button { margin:0; width:auto; }
+#v-info h3 { border-top:1px solid var(--linie, #e5e7eb); padding-top:14px; margin-top:16px; }
+#iOrdner .feld + .feld { border-top:1px solid var(--linie, #e5e7eb); padding-top:10px; }
+#v-info .journal + .zeile { border-top:1px solid var(--linie, #e5e7eb); padding-top:12px; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme=light]) #v-info h3, html:not([data-theme=light]) #iOrdner .feld + .feld, html:not([data-theme=light]) #v-info .journal + .zeile { border-top-color:#3a3a3c; }
+}
+html[data-theme=dark] #v-info h3, html[data-theme=dark] #iOrdner .feld + .feld, html[data-theme=dark] #v-info .journal + .zeile { border-top-color:#3a3a3c; }
+
+/* Start-Ladeschirm: deckt Startkarte/Kennwortfenster ab, solange der Auto-Ablauf läuft */
+#ladeSchirm { position:fixed; inset:0; z-index:1000; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; transition:opacity .15s ease; }
+#ladeSchirm img { width:min(320px,70vw); height:auto; }
+#ladeSchirm.aus { opacity:0; pointer-events:none; }
+.ladeSpin { width:22px; height:22px; border-radius:50%; border:2.5px solid rgba(128,128,128,.25); border-top-color:rgba(128,128,128,.8); opacity:0; animation:ladeDreh .9s linear infinite, ladeEin .3s ease .6s forwards; }
+@keyframes ladeDreh { to { transform:rotate(360deg); } }
+@keyframes ladeEin { to { opacity:1; } }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme=light]) #ladeSchirm { background:#1C1C1E; }
+}
+html[data-theme=dark] #ladeSchirm { background:#1C1C1E; }
+/* v111: Letzte Buchungen oben breit (feste Höhe, intern scrollbar), Bemerkung unten neben dem Bild (füllt die Fläche) */
+.detail .buchbox { flex:none; display:flex; flex-direction:column; min-height:0; }
+.detail .buchbox h3 { margin:2px 0 2px; }
+.detail .buchscroll { height:var(--buchh, 156px); overflow:auto; -webkit-overflow-scrolling:touch; }
+.detail .buchscroll table.letzte { width:100%; }
+.detail .buchscroll thead th { position:sticky; top:0; background:var(--feld, #fff); z-index:1; }
+.detail .unten > .wert.bem.unbem { min-height:0; height:100%; overflow:hidden; display:block; position:relative; align-self:stretch; }
+.detail .wert.bem.unbem span, .detail .wert.bem.unbem.zu span { display:block; -webkit-line-clamp:unset; line-clamp:none; min-height:0; overflow:hidden; line-height:1.3em; white-space:pre-wrap; }
+.detail .wert.bem.unbem label::after, .detail .wert.bem.unbem.lang label::after { content:none; }
+.detail .wert.bem.unbem.lang::after { content:"… mehr anzeigen"; position:absolute; right:0; bottom:0; padding:0 5px 0 24px; line-height:1.3em; font-size:13px; color:var(--pink); background:linear-gradient(90deg, rgba(255,255,255,0), var(--feld, #fff) 22px); }
+.detail .wert.bem.unbem:not(.lang) { cursor:default; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme=light]) .detail .buchscroll thead th { background:var(--feld, #1C1C1E); }
+  html:not([data-theme=light]) .detail .wert.bem.unbem.lang::after { background:linear-gradient(90deg, rgba(28,28,30,0), var(--feld, #1C1C1E) 22px); }
+}
+html[data-theme=dark] .detail .buchscroll thead th { background:var(--feld, #1C1C1E); }
+  html[data-theme=dark] .detail .wert.bem.unbem.lang::after { background:linear-gradient(90deg, rgba(28,28,30,0), var(--feld, #1C1C1E) 22px); }
+
+/* v112: Anzeige System/Hell/Dunkel */
+html[data-theme=light] { color-scheme: light; } html[data-theme=dark] { color-scheme: dark; }
+.umschalter.theme { max-width:360px; flex:1; } .umschalter.theme button { min-height:38px; }
+html[data-theme=dark] .umschalter button { background:#1C1C1E; } html[data-theme=dark] .umschalter button.an { background:var(--pink); color:#fff; }
