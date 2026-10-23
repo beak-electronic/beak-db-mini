@@ -235,9 +235,9 @@ header#kopf.bf-tick::before { -webkit-backdrop-filter:blur(12.01px) saturate(1.2
 .tab { color:var(--grau); border-color:rgba(75,71,72,.25); background:rgba(255,255,255,.45); }
 .tab.an { color:#fff; background:var(--pink); border-color:var(--pink); }
 /* v91: Willkommensbildschirm wie „Bauteile Suchen“ */
-#v-start.willkommen { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; padding:max(16px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+#v-start.willkommen, #v-login.willkommen { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; padding:max(16px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
   background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(221,0,122,.12), transparent 55%), radial-gradient(ellipse 70% 50% at 80% 90%, rgba(59,130,246,.06), transparent 50%), #fff; }
-#v-start.willkommen[hidden] { display:none !important; }
+#v-start.willkommen[hidden], #v-login.willkommen[hidden] { display:none !important; }
 .wkarte { width:min(420px, 94vw); background:#fff; border:1px solid rgba(26,31,39,.10); border-radius:16px; padding:28px 24px 22px; box-shadow:0 24px 64px rgba(0,0,0,.08); text-align:center; }
 .wicon { width:72px; height:72px; border-radius:16px; display:block; margin:0 auto 14px; box-shadow:0 8px 24px rgba(221,0,122,.22); }
 .wtitel { margin:0 0 6px; } .wtitel img { height:30px; width:auto; display:block; margin:0 auto; }
@@ -348,7 +348,7 @@ header#kopf::before, header#kopf.bf-tick::before { background:#fff; -webkit-back
   html:not([data-theme=light]) .tabzurueck { background:#4A1430; }
   html:not([data-theme=light]) .tabzurueck:active { background:#6A1E48; }
   html:not([data-theme=light]) .toast { background:#3A3A3C; }
-  html:not([data-theme=light]) #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
+  html:not([data-theme=light]) #v-start.willkommen, html:not([data-theme=light]) #v-login.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
   html:not([data-theme=light]) .wkarte { border-color:rgba(255,255,255,.10); }
   html:not([data-theme=light]) .wbeak .bl { color:#AEAEB2; }
   html:not([data-theme=light]) .bemdlg { background:rgba(0,0,0,.55); }
@@ -383,7 +383,7 @@ html[data-theme=dark] { --fix:rgba(255,255,255,.9); --grau:#D0CDCE; --linie:#3A3
   html[data-theme=dark] .tabzurueck { background:#4A1430; }
   html[data-theme=dark] .tabzurueck:active { background:#6A1E48; }
   html[data-theme=dark] .toast { background:#3A3A3C; }
-  html[data-theme=dark] #v-start.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
+  html[data-theme=dark] #v-start.willkommen, html[data-theme=dark] #v-login.willkommen { background:radial-gradient(60% 50% at 50% 30%, rgba(216,3,115,.18), transparent 70%), #000 !important; }
   html[data-theme=dark] .wkarte { border-color:rgba(255,255,255,.10); }
   html[data-theme=dark] .wbeak .bl { color:#AEAEB2; }
   html[data-theme=dark] .bemdlg { background:rgba(0,0,0,.55); }
@@ -467,3 +467,29 @@ html[data-theme=dark] .umschalter button { background:#1C1C1E; } html[data-theme
 .bild.bbild.leer { font-size:12px; color:#aaa; }
 .bild.bbild .dzahl { font-size:11px; }
 @media (max-width: 600px) { .bild.bbild { width:96px; height:72px; } }
+
+/* Anmeldung (Benutzer aus der PC-Datenbank) */
+.wlogin { text-align:left; display:flex; flex-direction:column; gap:10px; margin-bottom:6px; }
+.wlogin label { font-size:.85rem; font-weight:600; color:#6b7280; margin-bottom:-6px; }
+.wlogin select, .wlogin input { width:100%; min-height:48px; font-size:17px; }
+#lMeldung.fehler { color:#c0392b; font-weight:600; }
+/* Abmelden im Kopf (Tür-Symbol, wie Einstellungen) */
+#tabAbmelden { display:inline-flex; align-items:center; justify-content:center; }
+
+/* Alle Buchungen (Fenster) */
+.detail .buchbox.alle { cursor:pointer; }
+.bukarte { width:min(1000px,96vw); max-height:86vh; }
+.bukarte .buscroll { white-space:normal; padding:0 12px 12px; }
+.bukarte table.letzte { width:100%; font-size:14px; } .bukarte thead th { position:sticky; top:0; background:#fff; z-index:1; text-align:left; padding:8px 4px; }
+.bukarte td { padding:4px; border-bottom:1px solid #eceef1; vertical-align:top; } .bukarte .r { text-align:right; }
+html[data-theme=dark] .bukarte thead th { background:#1C1C1E; } html[data-theme=dark] .bukarte td { border-color:#3A3A3C; }
+@media (prefers-color-scheme: dark) { html:not([data-theme=light]) .bukarte thead th { background:#1C1C1E; } html:not([data-theme=light]) .bukarte td { border-color:#3A3A3C; } }
+
+/* Buchungstabellen: feste Spaltenbreiten für alle Artikel gleich (Bernd 23.10.; Breiten aus realen Buchungen abgeleitet) */
+table.letzte { table-layout:fixed; width:100%; font-variant-numeric:tabular-nums; }
+table.letzte td, table.letzte th { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+table.letzte col.c-dat { width:7.6em; } table.letzte col.c-me { width:5.4em; } table.letzte col.c-cd { width:1.8em; }
+table.letzte col.c-bs { width:5.4em; } table.letzte col.c-nm { width:30%; } table.letzte col.c-bem { width:auto; }
+table.letzte td.r, table.letzte th.r { text-align:right; }
+.bbuch { margin:4px 0 8px; } .bbuch h3 { margin:2px 0; font-size:15px; } .bbuch table.letzte { font-size:13px; } .bbuch.alle { cursor:pointer; }
+.bbuch td, .bbuch th { padding:2px 4px; }

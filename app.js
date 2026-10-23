@@ -53,7 +53,7 @@ async function entschluesseln(buf, kennwort) {
 }
 
 function laden(modell, bilder) {
-  DB = modell; VERW = null; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
+  DB = modell; VERW = null; BAIDX = null; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
   for (const u of bildUrl.values()) URL.revokeObjectURL(u); bildUrl.clear();
   for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) === 2) BGTYP.push(a); }   // v98: am iPad nur Baugruppen (keine Fertiggeräte/Systeme)
   const kst = '<option value="">&lt; Keine KST &gt;</option>' + (DB.kst || []).map(([n, b]) => `<option value="${n}">${n}  ${esc(b)}</option>`).join('');
@@ -71,13 +71,13 @@ function bild(i) {
 let VERLAUF = [], aktV = null, zurueckLaeuft = false;
 function zeige(v) {
   if (v === 'buchen' && aktV !== 'buchen' && $('#bModus').selectedIndex !== 0) { $('#bModus').selectedIndex = 0; bModusSetzen(); }   // Bernd 23.10.: beim Öffnen immer „Interne Buchung“
-  if (!zurueckLaeuft && aktV && aktV !== v && DB && !['start','person'].includes(aktV)) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); if (VERLAUF.length > 50) VERLAUF.shift(); }
-  if (!DB || v === 'start' || v === 'person') VERLAUF = [];
+  if (!zurueckLaeuft && aktV && aktV !== v && DB && !['start','person','login'].includes(aktV)) { VERLAUF.push({ v: aktV, art: aktArt, stkl: aktStkl }); if (VERLAUF.length > 50) VERLAUF.shift(); }
+  if (!DB || v === 'start' || v === 'person' || v === 'login') VERLAUF = [];
   if (v !== 'start') ladeAus();
   aktV = v; if ($('#zurueck')) $('#zurueck').hidden = !VERLAUF.length;
   $$('.ansicht').forEach(s => s.hidden = s.id !== 'v-' + v);
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
-  $('#tabs').hidden = !DB || v === 'start' || v === 'person'; tabsSetzen(v);
+  $('#tabs').hidden = !DB || v === 'start' || v === 'person' || v === 'login'; tabsSetzen(v); abmeldenKopf();
   if (v === 'info') { infoZeigen(); ordnerAnzeige(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
   if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
   if (v === 'bg') gTabelle();
@@ -180,8 +180,7 @@ async function oeffnen(gespeichert) {
     bannerAus(); setTimeout(() => neuDbPruefen('alter'), 400);
     navigator.storage?.persist?.().catch(() => {});      // Safari soll den Zwischenspeicher nicht räumen
     $('#fKennwort').value = ''; m.textContent = '';
-    if (!ls.get('person')) { zeige('person'); $('#fGeraet').value = ls.get('geraet') || 'Gerät'; $('#fPerson').focus(); }
-    else { zeige('artikel'); artikelSuchen(); }
+    nachLaden();
   } catch (err) { if (gespeichert) { await pwVergessen(); m.textContent = 'Das gespeicherte Kennwort passt nicht (mehr) – bitte neu eingeben.'; } else m.textContent = err.message; m.classList.add('fehler'); ladeAus(); }
   finally { $('#bOeffnen').disabled = false; }
 }
@@ -193,10 +192,56 @@ $('#iZurueck').addEventListener('click', () => zeige(DB ? 'artikel' : 'start'));
 $('#fForm').addEventListener('submit', e => e.preventDefault());
 $('#fKennwort').addEventListener('keydown', e => { if (e.key === 'Enter') oeffnen(); });
 $('#bPerson').addEventListener('click', () => {
-  const p = $('#fPerson').value.trim(); if (p.length < 2) { $('#fPerson').focus(); return; }
+  const p = mitLogin() ? angemeldet() : $('#fPerson').value.trim(); if (!p || p.length < 2) { $('#fPerson').focus(); return; }
   ls.set('person', p); ls.set('geraet', $('#fGeraet').value.trim() || 'Gerät');
   zeige('artikel'); artikelSuchen();
 });
+
+// ---------- Anmeldung (Benutzer aus der PC-Datenbank, DB.u = [Name, Recht, Salz, Iterationen, PBKDF2-Prüfwert]) ----------
+// Ohne DB.u (ältere .beakdb) wie bisher: Name einmal manuell. Mit DB.u: Anmeldung je App-Sitzung (sessionStorage), Abmelden/Sperren löscht sie.
+const mitLogin = () => !!(DB && Array.isArray(DB.u) && DB.u.length);
+const angemeldet = () => { const n = sessionStorage.getItem('beak.login'); return mitLogin() && DB.u.some(u => u[0] === n) ? n : null; };
+function nachLaden() {
+  if (mitLogin() && !angemeldet()) return loginZeigen();
+  if (mitLogin()) ls.set('person', angemeldet());
+  if (!ls.get('person') || (mitLogin() && !ls.get('geraet'))) personZeigen();
+  else { zeige('artikel'); artikelSuchen(); }
+}
+function personZeigen() {
+  const l = mitLogin(); $('#fPerson').hidden = l; $('#fPersonAngemeldet').hidden = !l;
+  if (l) $('#fPersonAngemeldet').textContent = `Angemeldet als ${angemeldet()} – bitte noch den Gerätenamen eingeben.`;
+  $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || (l ? '' : 'Gerät');
+  zeige('person'); (l ? $('#fGeraet') : $('#fPerson')).focus();
+}
+function loginZeigen() {
+  const sel = $('#lName'), vor = ls.get('person');
+  sel.innerHTML = DB.u.map(u => `<option${u[0] === vor ? ' selected' : ''}>${esc(u[0])}</option>`).join('');
+  $('#lKennwort').value = ''; $('#lMeldung').textContent = ''; $('#lMeldung').className = 'meldung';
+  zeige('login'); setTimeout(() => (vor || DESKTOP ? $('#lKennwort') : sel).focus(), 50);
+}
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function kennwortPruefen(u, pw) {
+  const basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const h = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: b64(u[2]), iterations: u[3], hash: 'SHA-256' }, basis, 256)), soll = b64(u[4]);
+  let d = h.length ^ soll.length; for (let i = 0; i < h.length && i < soll.length; i++) d |= h[i] ^ soll[i]; return d === 0;
+}
+$('#lForm').addEventListener('submit', async e => {
+  e.preventDefault(); const m = $('#lMeldung'), u = DB?.u?.find(x => x[0] === $('#lName').value), pw = $('#lKennwort').value;
+  m.className = 'meldung'; if (!u) return;
+  if (!pw) { m.textContent = 'Bitte das Kennwort eingeben.'; m.classList.add('fehler'); $('#lKennwort').focus(); return; }
+  $('#bLogin').disabled = true; m.textContent = 'Prüfe …';
+  try {
+    if (!await kennwortPruefen(u, pw)) { m.textContent = 'Kennwort falsch – bitte erneut versuchen.'; m.classList.add('fehler'); $('#lKennwort').select(); return; }
+    sessionStorage.setItem('beak.login', u[0]); ls.set('person', u[0]); $('#lKennwort').value = ''; m.textContent = ''; nachLaden();
+  } finally { $('#bLogin').disabled = false; }
+});
+function abmelden() { sessionStorage.removeItem('beak.login'); if (mitLogin()) loginZeigen(); }
+// Abmelden-Knopf im Kopf rechts neben Einstellungen (Tür-Symbol, Bernd 23.10.: Variante A)
+function abmeldenKopf() {
+  const b = $('#tabAbmelden'), n = angemeldet(); b.hidden = !n; if (!n) return;
+  b.title = `Abmelden (${n})`;
+}
+$('#tabAbmelden').addEventListener('click', abmelden);
 
 // ---------- Artikel-Datei ----------
 let aktArt = null;
@@ -212,6 +257,28 @@ function artikelSuchen() {
   if (!aktArt && t[0]) artikelZeigen(t[0]);
 }
 $('#aSuche').addEventListener('input', artikelSuchen);
+// Buchungszeile [Gebucht, Fakt, Menge, Code Sys, Sys nach, Code Lager, Lager nach, Name, Bem]
+const buZeile = ([d, f, m, cs, sb, ci, bb, n, bem]) => { const z = x => x != null ? fmt.format(x) : ''; return `<tr><td>${esc(d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(2, 4) + ' ' + d.slice(11, 16) : '')}</td>
+      <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td title="${esc(n)}">${esc(n)}</td><td title="${esc(bem)}">${esc(bem)}</td></tr>`; };
+// ALLE Buchungen (DB.ba, spaltenweise; ältere .beakdb ohne ba: nur die 3 aus a.bu). Index wird beim ersten Zugriff gebaut.
+let BAIDX = null;
+function baIndex() { if (BAIDX || !DB?.ba) return BAIDX; BAIDX = new Map(); let s = 0; const { a, c } = DB.ba; for (let i = 0; i < a.length; i++) { BAIDX.set(a[i], [s, c[i]]); s += c[i]; } return BAIDX; }
+const buAnz = n => { const x = baIndex()?.get(n); return x ? x[1] : 0; };
+const buHole = i => { const b = DB.ba, w = b.w; return [b.d[i], b.f[i], b.m[i], w[b.cs[i]], b.sb[i], w[b.ci[i]], b.bb[i], w[b.nm[i]], b.bem[i]]; };
+function buchungenFenster(a) {
+  const x = baIndex()?.get(a.n); if (!x) return; const [s, anz] = x;
+  let d = document.getElementById('buDlg');
+  if (!d) { d = document.createElement('div'); d.id = 'buDlg'; d.className = 'bemdlg';
+    d.innerHTML = '<div class="bemkarte bukarte" role="dialog" aria-modal="true"><div class="bemkopf"><b class="butitel"></b><button type="button" class="bemzu" aria-label="Schließen"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button></div><div class="bemtext buscroll"><table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody></tbody></table></div></div>';
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('.bemzu')) d.hidden = true; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !d.hidden) d.hidden = true; }); document.body.appendChild(d); }
+  d.querySelector('.butitel').textContent = `Alle Buchungen · ${nrFmt(a.n)} ${a.b || ''} (${nrFmt(anz)})`;
+  const tb = d.querySelector('tbody'), sc = d.querySelector('.buscroll'); let fertig = 0;
+  const mehr = () => { if (fertig >= anz) return; const bis = Math.min(anz, fertig + 200); let h = ''; for (let i = fertig; i < bis; i++) h += buZeile(buHole(s + i)); tb.insertAdjacentHTML('beforeend', h); fertig = bis; };
+  tb.innerHTML = ''; sc.scrollTop = 0; mehr(); sc.onscroll = () => { if (sc.scrollTop + sc.clientHeight > sc.scrollHeight - 600) mehr(); };   // nachladen beim Scrollen (je 200 Zeilen)
+  d.hidden = false;
+}
+document.addEventListener('click', e => { const b = e.target.closest('#aDetail .buchbox.alle'); if (b && aktArt) buchungenFenster(aktArt); });
 const W = (l, v, cls = '') => `<div class="wert ${cls}"><label>${l}</label><span>${esc(v ?? '')}</span></div>`;
 function artikelZeigen(a) {
   if (!zurueckLaeuft && aktV === 'artikel' && aktArt && aktArt !== a) merkeSchritt();
@@ -219,15 +286,14 @@ function artikelZeigen(a) {
   $$('#aListe li').forEach(li => li.classList.toggle('an', +li.dataset.n === a.n));
   const url = bild(a.i);
   const z = x => x != null ? fmt.format(x) : '';
-  const bu = (a.bu || []).map(([d, f, m, cs, sb, ci, bb, n, bem]) => `<tr><td>${esc(d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(2, 4) + ' ' + d.slice(11, 16) : '')}</td>
-      <td class="r w">${f === '-' ? '−' : '+'}${fmt.format(m)}</td><td>${esc(cs)}</td><td class="r w">${z(sb)}</td><td>${esc(ci)}</td><td class="r w">${z(bb)}</td><td>${esc(n)}</td><td>${esc(bem)}</td></tr>`).join('');
+  const bu = (a.bu || []).map(buZeile).join('');
   $('#aDetail').innerHTML = `
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : '<select class="instkl" disabled><option>In Stückliste (0)</option></select>'; })()}</div>
     <div class="bestand"><div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div>
       <div class="b"><label>Lager-Bestand (Ist)</label><span>${fmt.format(a.ist ?? 0)}</span></div></div>
     <div class="werte">${W('Typ', ({1:'Artikel',2:'Baugruppe',3:'Fertiggerät',4:'System'})[a.t] || a.t)}${W('Lagerort', a.lo)}
       ${W('Lagerplatz', [a.lot, a.lp].filter(Boolean).join(' '))}${W('Bauform', a.bf)}${W('Lieferant', (a.l || []).map(n => Array.isArray(n) ? n[0] : n).filter(Boolean).join(', '), 'lieflist')}</div>
-    <div class="buchbox"><h3>Letzte Buchungen</h3><div class="buchscroll">${bu ? `<table class="letzte"><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div></div>
+    <div class="buchbox${buAnz(a.n) > 0 ? ' alle' : ''}" title="Alle Buchungen anzeigen"><h3>Letzte Buchungen${buAnz(a.n) ? ` <span class="klein fix">(${nrFmt(buAnz(a.n))} gesamt – antippen für alle)</span>` : ''}</h3><div class="buchscroll">${bu ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${bu}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}</div></div>
     <div class="unten">
       <div class="wert bem zu unbem" title="Antippen: Bemerkung ganz anzeigen"><label>Bemerkung</label><span>${esc((a.bem || '').replace(/\r\n?/g, '\n'))}</span></div>
       <div class="bild ${url ? '' : 'leer'}">${url ? `<img src="${url}" alt="Bild ${a.n}" draggable="false">` : 'kein Bild'}</div>
@@ -329,14 +395,14 @@ function bSchritt() {
 }
 function buchenArtikel(a) {
   if (a && (a.t || 1) > 1) { bArt = null; $('#bListe').innerHTML = ''; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); $('#bArtikel').value = String(a.n);
-    buchenBild('#bBild', null); $('#bMeldung').textContent = 'Das ist eine Baugruppe – Baugruppen bitte über „BG buchen“ buchen.'; bSchritt(); return; }   // v96
+    buchenBild('#bBild', null); bBuchZeigen(null); $('#bMeldung').textContent = 'Das ist eine Baugruppe – Baugruppen bitte über „BG buchen“ buchen.'; bSchritt(); return; }   // v96
   bArt = a; $('#bArtikel').value = String(a.n); $('#bListe').innerHTML = '';
   $('#bNr').textContent = nrFmt(a.n); $('#bBez').textContent = a.b || ''; $('#bSys').textContent = fmt2(a.sys);
   $('#bLo').textContent = [loBez(a), a.lot, a.lp].filter(Boolean).join(' · ');
-  $('#bMeldung').textContent = ''; bLiefFuellen(); buchenBild('#bBild', a); bSchritt();
+  $('#bMeldung').textContent = ''; bLiefFuellen(); buchenBild('#bBild', a); bBuchZeigen(a); bSchritt();
 }
 const fmt2 = v => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
-$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bLiefFuellen(); buchenBild('#bBild', null); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).filter(a => (a.t || 1) <= 1).slice(0, 40), null, buchenArtikel); });
+$('#bArtikel').addEventListener('input', () => { bArt = null; ['#bNr', '#bBez', '#bSys', '#bLo'].forEach(x => $(x).textContent = ''); bLiefFuellen(); buchenBild('#bBild', null); bBuchZeigen(null); bSchritt(); liste($('#bListe'), suche($('#bArtikel').value).filter(a => (a.t || 1) <= 1).slice(0, 40), null, buchenArtikel); });
 ['#bVz', '#bMenge'].forEach(x => $(x).addEventListener('input', bSchritt));
 $('#bModus').addEventListener('change', bModusSetzen);
 $('#bLief').addEventListener('change', () => { bFirma(); bSchritt(); });
@@ -523,14 +589,17 @@ $('#dlgTeilen').addEventListener('click', () => { if (!letzteDatei) return; if (
 
 // ---------- Einstellungen ----------
 function infoZeigen() {
-  $('#iPerson').textContent = ls.get('person') || ''; $('#iGeraet').textContent = ls.get('geraet') || 'Gerät';
+  $('#iPerson').textContent = (mitLogin() ? angemeldet() : ls.get('person')) || ''; $('#iGeraet').textContent = ls.get('geraet') || 'Gerät';
+  $('#iPersonAendern').hidden = mitLogin(); $('#iAbmelden').hidden = !mitLogin(); $('#iGeraetAendern').hidden = !mitLogin();
   $('#iDb').textContent = DB ? `Stand ${dbStandText(DB)} (${dbAlterText(dbStandDatum(DB))}) · ${DB.quelle} · ${nrFmt(DB.a.length)} Artikel · Stückliste: ${nrFmt(Object.keys(DB.bg).length)} · ${nrFmt(DB.img.length)} Bilder` : '';
   $('#iModus').textContent = DESKTOP ? 'Windows/PC: Buchungen in den verknüpften Buchungs-Ordner (sonst „Speichern unter“)' : istStandalone() ? 'Home-Bildschirm-App: Buchungen über „Teilen → In Dateien sichern“' : 'Safari-Tab: Buchungen als Download (Download-Ordner in den Einstellungen auf iCloud Drive/BEAK/Buchungen stellen)';
   const j = JSON.parse(ls.get('journal') || '[]');
   $('#iJournal').innerHTML = j.length ? j.map(x => `<li><span class="anz">${esc(x.zeit)}</span> · ${esc(x.text)}<br><span class="klein">${esc(x.name)}</span></li>`).join('') : '<li class="fix">Noch keine Buchungen.</li>';
 }
-$('#iPersonAendern').addEventListener('click', () => { $('#fPerson').value = ls.get('person') || ''; $('#fGeraet').value = ls.get('geraet') || 'Gerät'; zeige('person'); });
-function sperren() { DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; bannerAus(); }
+$('#iPersonAendern').addEventListener('click', personZeigen);
+$('#iGeraetAendern').addEventListener('click', personZeigen);
+$('#iAbmelden').addEventListener('click', abmelden);
+function sperren() { sessionStorage.removeItem('beak.login'); DB = null; BILDER = null; ART = new Map(); BGLISTE = []; aktArt = aktStkl = bArt = gBg = qBg = null; BGTYP = []; gListe = []; $('#aDetail').innerHTML = $('#sDetail').innerHTML = ''; bannerAus(); }
 $('#iSperren').addEventListener('click', () => { sperren(); startVorbereiten(); });
 $('#iNeueDb').addEventListener('click', async () => { await idbDel(); datei = null; $('#dbStand').textContent = ''; $('#wKennwort').hidden = true; $('#iSperren').click(); });
 // beim Verlassen/Ausblenden nach 15 Minuten automatisch sperren
@@ -728,6 +797,11 @@ async function dateienZeigen(a, kbox = null) {
 }
 /** Bild im Buchen-Fenster (Artikel buchen / BG buchen): gleiche Quelle wie die Artikel-Datei – komprimiertes Bild, am Desktop mit
  * verknüpftem Bilder-Ordner das erste Bild in voller Qualität, Klick öffnet den Betrachter. Fester Platz, ohne Bild dezenter Platzhalter. */
+// Letzte Buchungen (3) im Fenster „Artikel buchen“ – gleiche Tabelle wie Artikel-Datei, antippen → alle Buchungen
+function bBuchZeigen(a) { const b = $('#bBuch'); if (!b) return; b.hidden = !a; if (!a) { b.innerHTML = ''; return; }
+  const n = buAnz(a.n); b.classList.toggle('alle', n > 0); b.title = n ? 'Alle Buchungen anzeigen' : '';
+  b.innerHTML = `<h3>Letzte Buchungen${n ? ` <span class="klein fix">(${nrFmt(n)} gesamt – antippen für alle)</span>` : ''}</h3>${(a.bu || []).length ? `<table class="letzte"><colgroup><col class="c-dat"><col class="c-me"><col class="c-cd"><col class="c-bs"><col class="c-cd"><col class="c-bs"><col class="c-nm"><col class="c-bem"></colgroup><thead><tr><th>Gebucht</th><th class="r">Menge</th><th></th><th class="r">System</th><th></th><th class="r">Lager</th><th>Name / BG-Bez.</th><th>Bemerkung</th></tr></thead><tbody>${a.bu.map(buZeile).join('')}</tbody></table>` : '<p class="fix klein">Keine Buchungen.</p>'}`;
+  b.onclick = () => { if (n) buchungenFenster(a); }; }
 function buchenBild(sel, a) {
   const box = $(sel); if (!box) return;
   box._tok = (box._tok || 0) + 1; box.onclick = null; box.title = ''; box.classList.remove('dateien');
@@ -767,7 +841,7 @@ function betrachter(a, start) {
 
 // ---------- Desktop: Cursor in der Artikel-Datei immer im Suchfeld (iPad unverändert – sonst Tastatur) ----------
 if (DESKTOP) (() => {
-  const offen = () => ['#ladeSchirm', '#dlg', '#bemDlg', '#betrachter', '[role="dialog"]', '[aria-modal="true"]'].some(s => [...document.querySelectorAll(s)].some(e => !e.hidden && e.offsetParent !== null || (e.id === 'ladeSchirm' && !e.classList.contains('aus'))));
+  const offen = () => ['#ladeSchirm', '#dlg', '#bemDlg', '#buDlg', '#betrachter', '[role="dialog"]', '[aria-modal="true"]'].some(s => [...document.querySelectorAll(s)].some(e => !e.hidden && e.offsetParent !== null || (e.id === 'ladeSchirm' && !e.classList.contains('aus'))));
   const fremd = () => { const a = document.activeElement; return a && a !== document.body && a.id !== 'aSuche' && a.matches('input, select, textarea, [contenteditable="true"]'); };
   const fokus = () => { if (aktV !== 'artikel' || !DB || document.hidden || offen() || fremd()) return; const f = $('#aSuche'); if (f && document.activeElement !== f) { f.focus({ preventScroll: true }); f.select(); } };
   let t = 0; const bald = () => { clearTimeout(t); t = setTimeout(fokus, 60); };

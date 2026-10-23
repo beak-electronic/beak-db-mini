@@ -32,6 +32,7 @@
     <button data-v="bgbuchen" class="tab">BG buchen</button>
     <button data-v="bg" class="tab">Material-Entnahme</button>
     <button data-v="info" class="tab icon" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+    <button id="tabAbmelden" class="tab icon" title="Abmelden" aria-label="Abmelden" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg></button>
   </nav>
 <div id="neuDb" class="neudb" hidden role="status">
   <span class="txt"><b>Neue Datenbankversion verfügbar?</b> – <span id="neuDbStand" class="klein"></span></span>
@@ -62,7 +63,23 @@
     </div>
     <button id="wZugriff" class="wbtn primary" hidden>Zugriff erlauben</button>
     <p id="startMeldung" class="meldung"></p>
-    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.1</p>
+    <p class="wversion" id="wVersion">BEAK DB mini · Version 1.2</p>
+  </div>
+</section>
+
+<!-- Anmeldung (wenn die Datenbank Benutzer enthält) -->
+<section id="v-login" class="ansicht willkommen" hidden>
+  <div class="wkarte">
+    <span class="wbeak" aria-label="BEAK"><span class="bl">B&nbsp;E&nbsp;A&nbsp;K</span><span class="bd">•</span></span>
+    <img class="wicon" src="icon-180.png" alt="" width="72" height="72">
+    <h1 class="wtitel">Anmelden</h1>
+    <p class="wsub">Bitte mit Ihrem Namen und Kennwort anmelden.</p>
+    <form id="lForm" class="wlogin" autocomplete="on">
+      <label for="lName">Name</label><select id="lName" autocomplete="username"></select>
+      <label for="lKennwort">Kennwort</label><input type="password" id="lKennwort" placeholder="Kennwort" autocomplete="current-password" enterkeyhint="go">
+      <button id="bLogin" type="submit" class="wbtn primary">Anmelden</button>
+    </form>
+    <p id="lMeldung" class="meldung"></p>
   </div>
 </section>
 
@@ -71,6 +88,7 @@
   <div class="karte start">
     <h1>Wer bucht?</h1>
     <p class="fix">Ihr Name wird einmal gespeichert und bei jeder Buchung mitgeschickt.</p>
+    <p class="fix" id="fPersonAngemeldet" hidden></p>
     <input type="text" id="fPerson" placeholder="Vor- und Nachname" autocomplete="name" enterkeyhint="done">
     <input type="text" id="fGeraet" placeholder="Gerätename, z. B. Lager" enterkeyhint="done">
     <button id="bPerson" class="pink gross">Speichern</button>
@@ -130,6 +148,7 @@
       <div><label>SYS-Bestand</label><span id="bSys"></span></div>
       <div class="w2"><label>Lagerort</label><span id="bLo"></span></div>
     </div><div class="bild bbild" id="bBild"></div></div>
+    <div class="bbuch buchbox" id="bBuch" hidden></div>
     <div class="feld" id="bLiefFeld" hidden><label>Lieferant</label>
       <div class="zeile"><select id="bLief"></select><span class="anz" id="bFirma"></span></div></div>
     <div class="feld"><label>Art der Buchung</label>
@@ -217,9 +236,9 @@
 <section id="v-info" class="ansicht" hidden>
   <div class="karte formular">
     <h2>Einstellungen</h2>
-    <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button></div>
-    <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span></div>
-    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.1</span></div>
+    <div class="feld"><label>Person</label><span class="anz" id="iPerson"></span><button id="iPersonAendern" class="klein">ändern</button><button id="iAbmelden" class="klein" hidden>Abmelden</button></div>
+    <div class="feld"><label>Gerät</label><span class="anz" id="iGeraet"></span><button id="iGeraetAendern" class="klein" hidden>ändern</button></div>
+    <div class="feld"><label>Version</label><span class="fix" id="iVersion">BEAK DB mini · Version 1.2</span></div>
     <div class="feld"><label>Anzeige</label><div class="umschalter theme" id="iTheme"><button type="button" data-t="system">System</button><button type="button" data-t="light">Hell</button><button type="button" data-t="dark">Dunkel</button></div></div>
     <div class="feld"><label>Datenbank</label><span class="anz" id="iDb"></span></div>
     <div class="feld"><label>Hinweis „neue Datenbank“ ab</label><div class="zeile"><input type="text" id="iNeuStd" inputmode="decimal" autocomplete="off" class="zahl anzahl"><span class="fix">Stunden Alter</span><button id="iNeuJetzt" class="klein">jetzt prüfen</button></div></div>
