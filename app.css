@@ -512,3 +512,67 @@ table.letzte td.r, table.letzte th.r { text-align:right; }
 #sDetail tr.markiert td { background:#FCE4F1; }
 @media (prefers-color-scheme: dark) { html:not([data-theme=light]) #sDetail tr.markiert td { background:#4A1430; } }
 html[data-theme=dark] #sDetail tr.markiert td { background:#4A1430; }
+/* v1.7: iPhone (schmal ≤ 600 px bzw. Querformat mit geringer Höhe) – iPad/Windows unverändert */
+@media (max-width: 600px), (max-height: 500px) and (pointer: coarse) {
+  header#kopf { padding-left:calc(env(safe-area-inset-left) + 8px); padding-right:calc(env(safe-area-inset-right) + 8px); gap:6px; }
+  nav#tabs { flex:1 1 auto; min-width:0; justify-content:flex-start; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  nav#tabs::-webkit-scrollbar { display:none; }
+  nav#tabs > * { flex:none; }
+  #tabs:has(.tabzurueck[hidden]) .tab[data-v="artikel"] { margin-right:0; }
+  .tabzurueck { margin-right:0 !important; }
+  .tabzurueck, .tabzurueck[style] { width:44px; height:44px; min-height:44px; margin-left:4px; }
+  main { padding-left:calc(env(safe-area-inset-left) + 8px); padding-right:calc(env(safe-area-inset-right) + 8px); }
+  .karte { padding:12px; }
+  .ansicht, .karte, .split > *, .stklkopf > *, .druckwahl, .formular { min-width:0; max-width:100%; }
+  /* Artikel-Datei: Liste oben, Detail darunter, Seite scrollt */
+  .split { display:flex !important; flex-direction:column; height:auto !important; gap:10px; }
+  .split .liste { max-height:42vh; display:flex; flex-direction:column; }
+  .split .liste .ergebnis { overflow:auto; flex:1 1 auto; min-height:0; }
+  .detail { overflow:visible !important; display:block !important; height:auto !important; }
+  .dkopf { padding-right:0 !important; }
+  .dkopf select.instkl { position:static !important; width:100% !important; height:44px !important; min-height:44px !important; order:9; margin:6px 0 0 !important; }
+  #aDetail .dkopf .bez { height:auto; flex-basis:100%; }
+  #aDetail .dkopf { margin-bottom:14px; }
+  /* Letzte Buchungen: Datum–Lager passen in die Breite, Name/Bemerkung per Wischen in der Tabelle */
+  .detail .buchscroll { height:auto !important; max-height:none; }
+  .detail .buchbox h3 { margin:14px 0 4px; }
+  .detail .buchscroll table.letzte { width:auto; min-width:100%; font-size:13px; table-layout:fixed; }
+  table.letzte col.c-dat { width:6.9em; } table.letzte col.c-me { width:4.3em; } table.letzte col.c-cd { width:1.3em; }
+  table.letzte col.c-bs { width:4.3em; } table.letzte col.c-nm { width:11em; } table.letzte col.c-bem { width:12em; }
+  .detail .buchscroll td, .detail .buchscroll th { padding-left:3px; padding-right:3px; }
+  .detail .unten { margin-top:12px !important; }
+  .werte { grid-template-columns:repeat(2, minmax(0,1fr)) !important; }
+  .buchscroll, #bBuch, .buscroll, #sDetail, .tabelle { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+  .detail .unten { display:flex !important; flex-direction:column; gap:10px; }
+  .detail .bild, .detail .bild[style] { width:100% !important; max-width:100% !important; height:auto !important; aspect-ratio:4 / 3; align-self:stretch; }
+  /* Stückliste */
+  .stklkopf { grid-template-columns:minmax(0,1fr) !important; }
+  .druckwahl .zeile { flex-wrap:wrap; }
+  .druckwahl .zeile #sArt { flex:1 1 100%; order:-1; min-width:0; }
+  .druckwahl .zeile #sAnzahl { flex:1 1 0; }
+  .druckwahl .zeile #sDruck { flex:1 1 0; }
+  #sDetail .dkopf .bez, #sDetail .bez { white-space:normal; }
+  /* Formulare: Beschriftung über dem Feld */
+  .feld, .bgb-raster .feld, .artzeile, .bgb-raster .artzeile { grid-template-columns:minmax(0,1fr) !important; }
+  .zeile { flex-wrap:wrap; } .zeile > * { min-width:0; }
+  select.vz, select.vz.lang { width:100% !important; flex:1 1 100% !important; }
+  select.vz.lang + input { flex:1 1 100% !important; width:100% !important; }
+  /* Touch-Ziele ≥ 44 px */
+  button.klein, .bemzu, #betrachter .bemzu, .neudb button, .neudb .knopf, #update-hint button, html[data-theme] #update-hint button { min-height:44px; min-width:44px; }
+  .bemzu { width:44px; height:44px; }
+  td.buchen .jn { min-height:40px; line-height:38px; }
+  .umschalter.theme button { min-height:44px; }
+  input, select, textarea { font-size:16px !important; }
+  /* Dialoge volle Breite */
+  .dlg { padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 8px); align-items:flex-end; }
+  .dlg .karte { max-width:none; width:100%; max-height:100%; overflow:auto; }
+  .dlg .zeile.rechts > button { flex:1 1 0; }
+  /* Datei-Betrachter */
+  #betrachter { background:#111; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #betrachter .bvkopf { gap:6px; padding:6px 8px; }
+  #betrachter .bvmitte { position:relative; padding:0 4px 8px; }
+  #betrachter .bvpfeil { position:absolute; top:50%; transform:translateY(-50%); z-index:2; background:rgba(0,0,0,.45); }
+  #betrachter .bvl { left:8px; } #betrachter .bvr { right:8px; }
+  /* Update-Leiste */
+  .update-hint { left:calc(env(safe-area-inset-left) + 10px); right:calc(env(safe-area-inset-right) + 10px); transform:none; justify-content:space-between; }
+}
