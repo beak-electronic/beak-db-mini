@@ -84,7 +84,7 @@ function zeige(v) {
   window.scrollTo(0, 0);
 }
 $('#sFilter').addEventListener('input', () => { if (aktStkl) stklZeigen(aktStkl); });
-$$('.tab').forEach(t => t.addEventListener('click', () => { tabVorbelegen(t.dataset.v); zeige(t.dataset.v); }));
+$$('.tab').forEach(t => t.addEventListener('click', () => { if (t.dataset.v === 'info' && aktV === 'info') { const iz = $('#iZurueck'); if (iz && !iz.hidden) iz.click(); else if (VERLAUF.length) $('#zurueck').click(); else if (DB) zeige('artikel'); return; } tabVorbelegen(t.dataset.v); zeige(t.dataset.v); }));
 // v98: oben nur die Reiter, die zum gewählten Artikel passen
 function tabsSetzen(v) { const a = aktArt, t = a ? (a.t || 1) : 0, stk = !!(a && DB && DB.bg[a.n]);
   const zeig = { artikel: true, info: true, buchen: !!a && t <= 1, stkl: stk, bg: stk, bgbuchen: t === 2 };
