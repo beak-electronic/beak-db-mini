@@ -444,8 +444,9 @@ html[data-theme=dark] #ladeSchirm { background:#1C1C1E; }
 .detail .buchscroll thead th { position:sticky; top:0; background:var(--feld, #fff); z-index:1; }
 .detail .unten > .wert.bem.unbem { min-height:0; height:100%; overflow:hidden; display:block; position:relative; align-self:stretch; }
 .detail .wert.bem.unbem span, .detail .wert.bem.unbem.zu span { display:block; -webkit-line-clamp:unset; line-clamp:none; min-height:0; overflow:hidden; line-height:1.3em; white-space:pre-wrap; }
-.detail .wert.bem.unbem label::after, .detail .wert.bem.unbem.lang label::after { content:none; }
-.detail .wert.bem.unbem.lang::after { content:"… mehr anzeigen"; position:absolute; right:0; bottom:0; padding:0 5px 0 24px; line-height:1.3em; font-size:13px; color:var(--pink); background:linear-gradient(90deg, rgba(255,255,255,0), var(--feld, #fff) 22px); }
+.detail .wert.bem.unbem label::after { content:none; }
+/* 1.8: „… mehr anzeigen“ neben der Überschrift „Bemerkung“ (Bernd 27.10.2026) */
+.detail .wert.bem.unbem.lang label::after { content:"  … mehr anzeigen"; white-space:pre; font-weight:400; color:var(--pink); font-size:12px; }
 .detail .wert.bem.unbem:not(.lang) { cursor:default; }
 @media (prefers-color-scheme: dark) {
   html:not([data-theme=light]) .detail .buchscroll thead th { background:var(--feld, #1C1C1E); }
@@ -576,3 +577,33 @@ html[data-theme=dark] #sDetail tr.markiert td { background:#4A1430; }
   /* Update-Leiste */
   .update-hint { left:calc(env(safe-area-inset-left) + 10px); right:calc(env(safe-area-inset-right) + 10px); transform:none; justify-content:space-between; }
 }
+
+/* ===== 1.8 (Bernd 27.10.2026): Artikel-Datei kompakter, Bild nie über „Letzte Buchungen“, Bemerkung direkt darunter, kein iOS-Blur ===== */
+/* Bauform und Lieferant in einer Zeile */
+.werte .wert.lieflist { grid-column: span 2; }
+/* unten fest: Bemerkung links, Bild rechts, am unteren Rand; dazwischen füllen „Letzte Buchungen“ die Resthöhe (scrollbar) – nichts überlappt */
+@media (min-width: 601px) {
+  .detail { display:flex !important; flex-direction:column !important; overflow:hidden !important; }
+  .detail .buchbox { flex:1 1 0 !important; min-height:90px; display:flex; flex-direction:column; }
+  .detail .buchscroll { flex:1 1 0; height:auto !important; max-height:none !important; min-height:0; }
+  .detail .unten { display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; grid-template-rows:minmax(0,1fr) !important; column-gap:14px; align-items:stretch !important;
+    flex:none !important; height:clamp(150px, 26vh, 240px) !important; min-height:0 !important; overflow:hidden; margin-top:0 !important; }
+  .detail .unten > .wert.bem.unbem { align-self:stretch; height:100%; max-height:100%; }
+  .detail .bild, .detail .bild[style] { position:static !important; align-self:end !important; height:100% !important; max-height:100% !important; width:auto !important; max-width:min(30vw, 320px) !important; aspect-ratio:4 / 3; min-height:0 !important; overflow:hidden !important; display:flex; align-items:center; justify-content:center; border:1px solid var(--linie); border-radius:10px; background:#fff; box-sizing:border-box; }
+  .detail .bild img { width:100% !important; height:100% !important; max-width:100% !important; max-height:100% !important; object-fit:contain; border:0 !important; border-radius:0; }
+}
+/* kein Blur / keine durchscheinenden Flächen oben – überall deckend */
+*, *::before, *::after { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+header#kopf, header#kopf::before, header#kopf.bf-tick::before { background:#fff !important; }
+.tab { background:#fff !important; border-color:#D8DDE6 !important; box-shadow:none !important; }
+.tab.an { background:var(--pink) !important; border-color:var(--pink) !important; }
+.bemdlg { background:rgba(20,22,28,.45); }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme=light]) header#kopf, html:not([data-theme=light]) header#kopf::before { background:#1C1C1E !important; }
+  html:not([data-theme=light]) .tab:not(.an) { background:#2C2C2E !important; border-color:#3A3A3C !important; }
+}
+html[data-theme=dark] header#kopf, html[data-theme=dark] header#kopf::before { background:#1C1C1E !important; }
+html[data-theme=dark] .tab:not(.an) { background:#2C2C2E !important; border-color:#3A3A3C !important; }
+
+/* 1.8: keine angeschnittene Zeile – JS blendet überzählige Zeilen aus */
+@media (min-width: 601px) { .detail .buchscroll { overflow:hidden !important; } }

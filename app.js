@@ -52,7 +52,19 @@ async function entschluesseln(buf, kennwort) {
   return { modell: JSON.parse(json), bilder: klar.subarray(4 + len) };
 }
 
+// 1.8 (Bernd 27.10.2026): Personen nur „Vorname N.“ – Rückfall für ältere Exportdateien (neue kürzt schon der PC)
+const PERSON = /^\p{Lu}\p{Ll}+ \p{Lu}[\p{Ll}\-]+$/u;
+const kurzName = n => { const t = String(n ?? '').trim(); return PERSON.test(t) ? t.split(' ')[0] + ' ' + t.split(' ')[1][0].toUpperCase() + '.' : n; };
+function namenKuerzen(m) {
+  const full = new Set();
+  if (Array.isArray(m.u)) for (const u of m.u) { const t = String(u[0] || '').trim(), w = t.split(/\s+/); if (w.length > 1 && !/^\S+ \S\.$/.test(t)) { full.add(t); u[0] = w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.'; } }
+  const k = n => { const t = String(n ?? '').trim(); if (full.has(t)) { const w = t.split(/\s+/); return w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.'; } return kurzName(n); };
+  if (m.ba?.w) m.ba.w = m.ba.w.map(k);
+  for (const a of m.a || []) for (const b of a.bu || []) if (b[7]) b[7] = k(b[7]);
+  for (const key of ['person', 'letzterLogin']) { const v = ls.get(key); if (v) { const kv = k(v); if (kv !== v) ls.set(key, kv); } }
+}
 function laden(modell, bilder) {
+  namenKuerzen(modell);
   DB = modell; VERW = null; BAIDX = null; BILDER = bilder; ART = new Map(); BGLISTE = []; BGTYP = [];
   for (const u of bildUrl.values()) URL.revokeObjectURL(u); bildUrl.clear();
   for (const a of DB.a) { ART.set(a.n, a); if (DB.bg[a.n]) BGLISTE.push(a); if ((a.t || 1) === 2) BGTYP.push(a); }   // v98: am iPad nur Baugruppen (keine Fertiggeräte/Systeme)
@@ -286,7 +298,9 @@ function artikelZeigen(a) {
   $$('#aListe li').forEach(li => li.classList.toggle('an', +li.dataset.n === a.n));
   const url = bild(a.i);
   const z = x => x != null ? fmt.format(x) : '';
-  const bu = (a.bu || []).map(buZeile).join('');
+  // 1.8: so viele Buchungen laden, wie die Fläche füllen kann (Rest per Scrollen / „mehr anzeigen“)
+  const bx = baIndex()?.get(a.n), buListe = bx ? Array.from({ length: Math.min(bx[1], 60) }, (_, k) => buHole(bx[0] + k)) : (a.bu || []);
+  const bu = buListe.map(buZeile).join('');
   $('#aDetail').innerHTML = `
     <div class="dkopf"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span>${a.aus ? '<span class="auslauf">Auslauf</span>' : ''}${(() => { const v = verwendetIn(a.n); return v.length ? `<select id="aInStkl" class="instkl"><option value="">In Stückliste (${v.length}) ▾</option>${v.map(b => `<option value="${b.n}">${nrFmt(b.n)} – ${(b.b || '').replace(/</g, '&lt;')}</option>`).join('')}</select>` : '<select class="instkl" disabled><option>In Stückliste (0)</option></select>'; })()}</div>
     <div class="bestand"><div class="b"><label>System-Bestand (Sys)</label><span>${fmt.format(a.sys ?? 0)}</span></div>
@@ -343,7 +357,7 @@ function stklZeigen(a) {
   if (a !== aktStkl && $('#sFilter')) $('#sFilter').value = '';
   aktStkl = a; $('#sSuche').value = nrFmt(a.n) + ' ' + a.b; $('#sMeldung').textContent = '';
   const z = stklZeilen(a);
-  $('#sDetail').innerHTML = `<div class="dkopf mt mb"><span class="nr">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span></div>
+  $('#sDetail').innerHTML = `<div class="dkopf mt mb"><span class="nr artlink" data-art="${a.n}" title="In der Artikel-Datei öffnen">${nrFmt(a.n)}</span><span class="bez">${esc(a.b)}</span></div>
     <p class="fix klein">${z.length} Positionen · ${fmt.format(z.reduce((s, r) => s + (r.anz || 0), 0))} Teile je Baugruppe</p>${stklTabelle(z, false, true)}`;
   $$('#sDetail th.sortk').forEach(th => th.addEventListener('click', () => { const k = th.dataset.k; sSort = sSort.k === k ? { k, d: -sSort.d } : { k, d: 1 }; stklZeigen(aktStkl); }));
 }
@@ -558,7 +572,7 @@ function buchungSpeichern(teil, text, me) {
   let weg;
   if (istStandalone() && navigator.canShare?.({ files: [file] })) { weg = 'Jetzt unten auf „In Dateien sichern …“ tippen und im Teilen-Menü „In Dateien sichern“ → iCloud Drive/BEAK/Buchungen wählen.'; }
   else { download(file); weg = 'Die Datei wird in den Safari-Download-Ordner (iCloud Drive/BEAK/Buchungen) geladen.'; }
-  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchung erstellt – bitte sichern' : 'Buchung gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungsanfragen vorhanden!“, sobald iCloud die Datei synchronisiert hat.\nDatenbank-Stand hier: ${dbStandText(DB)}`, !!navigator.canShare?.({ files: [file] }));
+  dialog(istStandalone() && navigator.canShare?.({ files: [file] }) ? 'Buchungsanfrage erstellt – bitte sichern' : 'Buchungsanfrage erstellt – gespeichert', `${text}\n\nDatei: ${name}\n${weg}\n\nAm PC erscheint „Neue Buchungsanfragen vorhanden!“, sobald iCloud die Datei synchronisiert hat.\nDatenbank-Stand hier: ${dbStandText(DB)}`, !!navigator.canShare?.({ files: [file] }));
   nachBuchung = true;
 }
 let nachBuchung = false;
@@ -569,18 +583,18 @@ async function buchungDesktop(file, name, text) {
   const fuss = `\n\nDatenbank-Stand hier: ${dbStandText(DB)}`;
   const dir = await ordnerHolen('buch');
   if (dir) {
-    try { if (await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchung gespeichert', `${text}\n\nGespeichert in ${dir.name}/${name}${fuss}`, false); return; } }
+    try { if (await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchungsanfrage erstellt – gespeichert', `${text}\n\nGespeichert in ${dir.name}/${name}${fuss}`, false); return; } }
     catch (e) { console.warn(e); }
     letzteDatei = file;
-    dialog('Buchung erstellt – bitte sichern', `${text}\n\nKein Zugriff auf den Buchungs-Ordner „${dir.name}“. Bitte unten auf „Speichern …“ klicken.${fuss}`, true); return;
+    dialog('Buchungsanfrage erstellt – bitte sichern', `${text}\n\nKein Zugriff auf den Buchungs-Ordner „${dir.name}“. Bitte unten auf „Speichern …“ klicken.${fuss}`, true); return;
   }
-  dialog('Buchung erstellt – bitte sichern', `${text}\n\nDatei: ${name}\nBitte unten auf „Speichern …“ klicken (oder in den Einstellungen einen Buchungs-Ordner verknüpfen).${fuss}`, true);
+  dialog('Buchungsanfrage erstellt – bitte sichern', `${text}\n\nDatei: ${name}\nBitte unten auf „Speichern …“ klicken (oder in den Einstellungen einen Buchungs-Ordner verknüpfen).${fuss}`, true);
 }
 async function desktopSichern(file) {
   const dir = await ordnerHolen('buch');
-  try { if (dir && await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchung gespeichert', `Gespeichert in ${dir.name}/${file.name}`, false); return; } } catch (e) { console.warn(e); }
-  if (window.showSaveFilePicker) { try { const h = await showSaveFilePicker({ suggestedName: file.name, types: [{ description: 'BEAK Buchung', accept: { 'application/json': ['.json'] } }] }); const w = await h.createWritable(); await w.write(file); await w.close(); dialog('Buchung gespeichert', `Gespeichert: ${h.name}`, false); return; } catch (e) { if (e.name === 'AbortError') return; } }
-  download(file); dialog('Buchung gespeichert', `Als Download gespeichert: ${file.name}`, false);
+  try { if (dir && await ordnerRecht(dir, 'readwrite', true)) { await dateiSchreiben(dir, file); dialog('Buchungsanfrage erstellt – gespeichert', `Gespeichert in ${dir.name}/${file.name}`, false); return; } } catch (e) { console.warn(e); }
+  if (window.showSaveFilePicker) { try { const h = await showSaveFilePicker({ suggestedName: file.name, types: [{ description: 'BEAK Buchung', accept: { 'application/json': ['.json'] } }] }); const w = await h.createWritable(); await w.write(file); await w.close(); dialog('Buchungsanfrage erstellt – gespeichert', `Gespeichert: ${h.name}`, false); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  download(file); dialog('Buchungsanfrage erstellt – gespeichert', `Als Download gespeichert: ${file.name}`, false);
 }
 function dialog(titel, text, teilen) {
   $('#dlgTitel').textContent = titel; $('#dlgTeilen').textContent = DESKTOP ? 'Speichern …' : 'In Dateien sichern …'; $('#dlgText').innerText = text; $('#dlgTeilen').hidden = !teilen; $('#dlg').hidden = false;
@@ -641,7 +655,16 @@ document.addEventListener('click', e => { const l = e.target.closest('.wert.lief
 const bemPruefen = () => document.querySelectorAll('.wert.bem:not(.unbem)').forEach(b => { const s = b.querySelector('span'); if (!s) return;
   const war = b.classList.contains('zu'); b.classList.add('zu'); b.classList.toggle('lang', s.scrollHeight > s.clientHeight + 2); if (!war) b.classList.remove('zu'); });
 // v111: Bemerkung unten neben dem Bild – füllt die feste Fläche mit ganzen Zeilen, Rest „… mehr anzeigen“ (Fenster)
-function bemEinpassen() { const b = document.querySelector('#aDetail .wert.bem.unbem'); if (!b) return; const s = b.querySelector('span'), l = b.querySelector('label');
+// 1.8: „Letzte Buchungen“ – nur ganze Zeilen (iPad: so viele wie passen; iPhone: immer 3), Rest über „… mehr anzeigen“
+function buZeilenEinpassen() {
+  const sc = document.querySelector('#aDetail .buchscroll'); if (!sc) return; const rows = [...sc.querySelectorAll('tbody tr')]; if (!rows.length) return;
+  rows.forEach(r => r.style.display = '');
+  let n = 3;   // iPhone: immer nur 3 (Bernd 27.10.2026), mehr über „… mehr anzeigen“
+  if (innerWidth > 600) { const th = sc.querySelector('thead')?.getBoundingClientRect().height || 0, rh = rows[0].getBoundingClientRect().height || 24;
+    n = Math.max(1, Math.floor((sc.clientHeight - th + 0.5) / rh)); }
+  rows.forEach((r, i) => { if (i >= n) r.style.display = 'none'; });
+}
+function bemEinpassen() { buZeilenEinpassen(); const b = document.querySelector('#aDetail .wert.bem.unbem'); if (!b) return; const s = b.querySelector('span'), l = b.querySelector('label');
   const d = $('#aDetail'), u = d.querySelector('.unten'), bi = d.querySelector('.bild'); d.style.removeProperty('--buchh');   // wenig Höhe: Buchungsliste kürzer, Bild darf nie hineinragen
   const k = innerWidth + 'x' + innerHeight;
   if (u && bi && bemEinpassen.k !== k) { const fehlt = bi.getBoundingClientRect().height - u.getBoundingClientRect().height; bemEinpassen.k = k; bemEinpassen.h = fehlt > 0 ? Math.max(78, Math.floor(156 - fehlt - 1)) : 0; }
