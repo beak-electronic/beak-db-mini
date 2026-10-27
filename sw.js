@@ -1,5 +1,5 @@
 // BEAK DB mini – Service Worker: speichert NUR den Programmcode (offline nutzbar). Die Datenbank liegt verschlüsselt in IndexedDB.
-const CACHE = 'beak-db-mini-1.8';   // ← bei JEDEM Release hochzählen (sonst kein Update-Hinweis)
+const CACHE = 'beak-db-mini-1.9';   // ← bei JEDEM Release hochzählen (sonst kein Update-Hinweis)
 const DATEIEN = ['./', './index.html', './app.css', './app.js', './theme.js', './update.js', './suche.js', './stkllayout.js', './pdfbreiten.js', './stkldruck.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo-db-mini.svg', './logo-db-mini-hell.svg', './fonts/Aeonis.subset.ttf', './fonts/Constantia-Bold.subset.ttf'];
 const istNav = r => r.mode === 'navigate' || r.destination === 'document' || (!r.destination && (r.headers.get('accept') || '').includes('text/html'));
 const istIcon = u => /\/icon-\d+\.png$/i.test(u.pathname) || /apple-touch|favicon/i.test(u.pathname);

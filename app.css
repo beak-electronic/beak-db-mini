@@ -607,3 +607,21 @@ html[data-theme=dark] .tab:not(.an) { background:#2C2C2E !important; border-colo
 
 /* 1.8: keine angeschnittene Zeile – JS blendet überzählige Zeilen aus */
 @media (min-width: 601px) { .detail .buchscroll { overflow:hidden !important; } }
+
+/* ===== 1.9 (Bernd 27.10.2026): Seite selbst scrollt nie – nur innere Bereiche (main / Listen).
+   Ursache Blur: iOS/iPadOS 26 legt über Inhalt, der unter eine fixierte Kopfzeile scrollt, automatisch einen Unschärfe-Rand („scroll edge effect“).
+   Lösung: Body fest auf den Bildschirm (position:fixed; inset:0), Kopfzeile normal im Fluss (nicht mehr fixed), main ist der einzige Scroller und liegt UNTER der Kopfzeile. */
+html { height:100%; overflow:hidden; overscroll-behavior:none; background:#fff; }
+body { position:fixed; inset:0; height:auto; overflow:hidden; overscroll-behavior:none; display:flex; flex-direction:column; }
+header#kopf { position:relative !important; top:auto; left:auto; right:auto; flex:none; }
+main { flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  padding-top:calc(var(--bannerh, 0px) + 12px) !important; display:flex; flex-direction:column; }
+main > .ansicht:not([hidden]):not(.willkommen) { flex:1 0 auto; min-height:0; }
+.neudb { position:absolute; }
+@media (min-width: 601px) {
+  main:has(> #v-artikel:not([hidden])) { overflow:hidden; }
+  main > #v-artikel:not([hidden]) { flex:1 1 0; display:flex; flex-direction:column; }
+  #v-artikel .split { height:auto !important; flex:1 1 0; min-height:0; }
+}
+@media (prefers-color-scheme: dark) { html:not([data-theme=light]) { background:#1C1C1E; } }
+html[data-theme=dark] { background:#1C1C1E; }
