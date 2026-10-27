@@ -625,3 +625,5 @@ main > .ansicht:not([hidden]):not(.willkommen) { flex:1 0 auto; min-height:0; }
 }
 @media (prefers-color-scheme: dark) { html:not([data-theme=light]) { background:#1C1C1E; } }
 html[data-theme=dark] { background:#1C1C1E; }
+/* 1.9: Kopf, Bestände, Werte und Bemerkung/Bild nie stauchen – nur „Letzte Buchungen“ gibt Höhe ab (sonst Überlappung bei wenig Höhe) */
+@media (min-width: 601px) { .detail > :not(.buchbox) { flex-shrink:0 !important; } }

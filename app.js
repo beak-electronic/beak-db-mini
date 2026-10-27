@@ -52,16 +52,18 @@ async function entschluesseln(buf, kennwort) {
   return { modell: JSON.parse(json), bilder: klar.subarray(4 + len) };
 }
 
-// 1.8 (Bernd 27.10.2026): Personen nur „Vorname N.“ – Rückfall für ältere Exportdateien (neue kürzt schon der PC)
+// 1.9 (Bernd 27.10.2026): Personen in der ANZEIGE nur „Vorname N.“ – Login-Wert und Buchungsanfrage behalten den VOLLEN Namen (DB.u unverändert)
+const kurzVoll = n => { const w = String(n ?? '').trim().split(/\s+/); return w.length > 1 && !/^\S\.$/.test(w[w.length - 1]) ? w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.' : String(n ?? ''); };
 const PERSON = /^\p{Lu}\p{Ll}+ \p{Lu}[\p{Ll}\-]+$/u;
-const kurzName = n => { const t = String(n ?? '').trim(); return PERSON.test(t) ? t.split(' ')[0] + ' ' + t.split(' ')[1][0].toUpperCase() + '.' : n; };
+const kurzName = n => PERSON.test(String(n ?? '').trim()) ? kurzVoll(n) : n;
 function namenKuerzen(m) {
-  const full = new Set();
-  if (Array.isArray(m.u)) for (const u of m.u) { const t = String(u[0] || '').trim(), w = t.split(/\s+/); if (w.length > 1 && !/^\S+ \S\.$/.test(t)) { full.add(t); u[0] = w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.'; } }
-  const k = n => { const t = String(n ?? '').trim(); if (full.has(t)) { const w = t.split(/\s+/); return w[0] + ' ' + w[w.length - 1][0].toUpperCase() + '.'; } return kurzName(n); };
-  if (m.ba?.w) m.ba.w = m.ba.w.map(k);
+  const full = new Set((Array.isArray(m.u) ? m.u : []).map(u => String(u[0] || '').trim()));
+  const k = n => full.has(String(n ?? '').trim()) ? kurzVoll(n) : kurzName(n);
+  if (m.ba?.w) m.ba.w = m.ba.w.map(k);   // nur Anzeige (Buchungsliste)
   for (const a of m.a || []) for (const b of a.bu || []) if (b[7]) b[7] = k(b[7]);
-  for (const key of ['person', 'letzterLogin']) { const v = ls.get(key); if (v) { const kv = k(v); if (kv !== v) ls.set(key, kv); } }
+  // aus 1.8 gespeicherte Kurznamen („Daniel K.“) wieder auf den vollen Namen zurückführen, wenn eindeutig
+  for (const key of ['person', 'letzterLogin']) { const v = ls.get(key); if (!v || full.has(v)) continue;
+    const t = [...full].filter(f => kurzVoll(f) === v); if (t.length === 1) ls.set(key, t[0]); }
 }
 function laden(modell, bilder) {
   namenKuerzen(modell);
@@ -91,9 +93,9 @@ function zeige(v) {
   $$('.tab').forEach(t => t.classList.toggle('an', t.dataset.v === v));
   $('#tabs').hidden = !DB || v === 'start' || v === 'person' || v === 'login'; tabsSetzen(v); abmeldenKopf();
   if (v === 'info') { infoZeigen(); ordnerAnzeige(); pwAnzeige(); $('#iZurueck').hidden = !!DB; $('#iSperren').hidden = !DB; }
-  if (v === 'buchen') { $('#bName').textContent = ls.get('person') || ''; bSchritt(); }
+  if (v === 'buchen') { $('#bName').textContent = kurzVoll(ls.get('person') || ''); bSchritt(); }
   if (v === 'bg') gTabelle();
-  if (v === 'bgbuchen') { $('#qName').textContent = ls.get('person') || ''; $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
+  if (v === 'bgbuchen') { $('#qName').textContent = kurzVoll(ls.get('person') || ''); $('#qAnzahl').textContent = `${nrFmt(BGTYP.length)} Artikel in Liste`; qVorschau(); }
   window.scrollTo(0, 0);
 }
 $('#sFilter').addEventListener('input', () => { if (aktStkl) stklZeigen(aktStkl); });
@@ -227,7 +229,7 @@ function personZeigen() {
 }
 function loginZeigen() {
   const sel = $('#lName'), vor = ls.get('letzterLogin') || ls.get('person');
-  sel.innerHTML = DB.u.map(u => `<option${u[0] === vor ? ' selected' : ''}>${esc(u[0])}</option>`).join('');
+  sel.innerHTML = DB.u.map(u => `<option value="${esc(u[0])}"${u[0] === vor ? ' selected' : ''}>${esc(kurzVoll(u[0]))}</option>`).join('');   // Anzeige kurz, Wert voll
   $('#lKennwort').value = ''; $('#lMeldung').textContent = ''; $('#lMeldung').className = 'meldung';
   zeige('login'); setTimeout(() => (vor || DESKTOP ? $('#lKennwort') : sel).focus(), 50);
 }
@@ -604,7 +606,7 @@ $('#dlgTeilen').addEventListener('click', () => { if (!letzteDatei) return; if (
 
 // ---------- Einstellungen ----------
 function infoZeigen() {
-  $('#iPerson').textContent = (mitLogin() ? angemeldet() : ls.get('person')) || ''; $('#iGeraet').textContent = ls.get('geraet') || 'Gerät';
+  $('#iPerson').textContent = kurzVoll((mitLogin() ? angemeldet() : ls.get('person')) || ''); $('#iGeraet').textContent = ls.get('geraet') || 'Gerät';
   $('#iPersonAendern').hidden = mitLogin(); $('#iAbmelden').hidden = !mitLogin(); $('#iGeraetAendern').hidden = !mitLogin();
   $('#iDb').textContent = DB ? `Stand ${dbStandText(DB)} (${dbAlterText(dbStandDatum(DB))}) · ${DB.quelle} · ${nrFmt(DB.a.length)} Artikel · Stückliste: ${nrFmt(Object.keys(DB.bg).length)} · ${nrFmt(DB.img.length)} Bilder` : '';
   $('#iModus').textContent = DESKTOP ? 'Windows/PC: Buchungen in den verknüpften Buchungs-Ordner (sonst „Speichern unter“)' : istStandalone() ? 'Home-Bildschirm-App: Buchungen über „Teilen → In Dateien sichern“' : 'Safari-Tab: Buchungen als Download (Download-Ordner in den Einstellungen auf iCloud Drive/BEAK/Buchungen stellen)';
