@@ -644,8 +644,7 @@ function onTap(cx, cy){
     if (G.paused){ G.paused = false; return; }
     if (G.phase === "ready") launch(); else fireLaser();
   } else if (G.screen === "start"){
-    var b = hitButton(L.x, L.y); if (b){ b.act(); return; }
-    confirmStart();
+    var b = hitButton(L.x, L.y); if (b) b.act();   // nur der "Los"-Knopf startet
   } else {
     if (performance.now() - G.endAt < 900) return;   // guard: a laser tap must not restart right away
     var b2 = hitButton(L.x, L.y); if (b2){ b2.act(); return; }

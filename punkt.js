@@ -18,7 +18,7 @@
   function overlay() {
     if (ov) return;
     ov = document.createElement('div'); ov.id = 'punktFlaeche'; ov.setAttribute('aria-hidden', 'true');
-    knopf = document.createElement('button'); knopf.type = 'button'; knopf.className = 'punktZu'; knopf.textContent = 'Schließen';
+    knopf = document.createElement('button'); knopf.type = 'button'; knopf.className = 'punktZu'; knopf.textContent = 'Zurück an die Arbeit';
     knopf.addEventListener('click', schliessen);
     inhalt = document.createElement('div'); inhalt.className = 'punktInhalt';   // Minispiel BrEAK•out (Bernd 29.10.2026), wird erst bei voller Fläche geladen
     ov.append(inhalt, knopf); document.body.appendChild(ov);

@@ -1,5 +1,5 @@
 // BEAK DB mini – Service Worker: speichert NUR den Programmcode (offline nutzbar). Die Datenbank liegt verschlüsselt in IndexedDB.
-const CACHE = 'beak-db-mini-1.11';   // ← bei JEDEM Release hochzählen (sonst kein Update-Hinweis)
+const CACHE = 'beak-db-mini-1.12';   // ← bei JEDEM Release hochzählen (sonst kein Update-Hinweis)
 const DATEIEN = ['./', './index.html', './app.css', './app.js', './theme.js', './update.js', './suche.js', './stkllayout.js', './pdfbreiten.js', './stkldruck.js', './punkt.js', './spiel/beak-breakout.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo-db-mini.svg', './logo-db-mini-hell.svg', './fonts/Aeonis.subset.ttf', './fonts/Constantia-Bold.subset.ttf'];
 const istNav = r => r.mode === 'navigate' || r.destination === 'document' || (!r.destination && (r.headers.get('accept') || '').includes('text/html'));
 const istIcon = u => /\/icon-\d+\.png$/i.test(u.pathname) || /apple-touch|favicon/i.test(u.pathname);
@@ -19,8 +19,10 @@ self.addEventListener('fetch', e => {
   if (istIcon(u)) return;                       // Home-Bildschirm-Icons nie abfangen (iOS)
   if (/\/sw\.js$/i.test(u.pathname)) return;
   if (istNav(r)) {                              // Seite: Netz zuerst, offline die gespeicherte Hülle
-    e.respondWith(fetch(r).then(res => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then(x => { x.put('./index.html', c.clone()); x.put('./', c); }); } return res; })
-      .catch(async () => (await ausCache('./index.html')) || (await ausCache('./')) || offline()));
+    const p = new URL(r.url).pathname, basis = new URL('./', location).pathname;
+    const istHuelle = p === basis || p === basis + 'index.html';   // nur App-Hülle, nicht das Spiel-iframe
+    e.respondWith(fetch(r).then(res => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then(x => { if (istHuelle) { x.put('./index.html', c.clone()); x.put('./', c); } else x.put(r, c); }); } return res; })
+      .catch(async () => istHuelle ? ((await ausCache('./index.html')) || (await ausCache('./')) || offline()) : ((await ausCache(r)) || offline())));
     return;
   }
   if (istCode(u)) { e.respondWith(fetch(r, { cache: 'no-cache' }).then(res => merke(r, res)).catch(async () => (await ausCache(r)) || offline())); return; }

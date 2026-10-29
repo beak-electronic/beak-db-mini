@@ -630,7 +630,7 @@ html[data-theme=dark] { background:#1C1C1E; }
 /* BEAK-Punkt im Anmeldefenster (punkt.js) */
 .punktHit{position:absolute;top:-6px;right:-14px;width:72px;height:60px;z-index:5;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 #punktFlaeche{position:fixed;inset:0;z-index:9999;pointer-events:none;background:var(--pink);clip-path:circle(0 at 0 0);touch-action:none;-webkit-user-select:none;user-select:none}
-#punktFlaeche .punktZu{position:absolute;top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));min-height:44px;padding:0 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.75);background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:16px;opacity:0;pointer-events:none;transition:opacity .25s;touch-action:manipulation}
+#punktFlaeche .punktZu{position:absolute;top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));min-height:44px;padding:0 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.75);background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:16px;white-space:nowrap;max-width:calc(100vw - 28px);opacity:0;pointer-events:none;transition:opacity .25s;touch-action:manipulation}
 #punktFlaeche.voll{pointer-events:auto}
 #punktFlaeche.voll .punktZu{opacity:1;pointer-events:auto}
 .punktRing{position:fixed;z-index:10000;border-radius:50%;border:4px solid rgba(255,255,255,.8);box-shadow:0 0 0 3px rgba(214,0,122,.45),0 0 24px rgba(214,0,122,.5),inset 0 0 18px rgba(255,255,255,.55);pointer-events:none;will-change:transform,opacity}
