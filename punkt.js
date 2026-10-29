@@ -64,7 +64,7 @@
   }
   function spielStart() {
     if (inhalt.firstChild) return;
-    const f = document.createElement('iframe'); f.className = 'punktSpiel'; const vn = (document.getElementById('lName')?.value || '').trim().split(/\s+/)[0] || '';   // Vorname aus der Anmeldung
+    const f = document.createElement('iframe'); f.className = 'punktSpiel'; const vn = spielerName(document.getElementById('lName')?.value || '');   // Vorname aus der Anmeldung (Bernd → „Chef“)
     f.src = 'spiel/beak-breakout.html' + (vn ? '?spieler=' + encodeURIComponent(vn) : ''); f.title = 'BrEAK•out';
     f.setAttribute('allow', 'autoplay'); f.addEventListener('load', () => { try { f.contentWindow.focus(); } catch {} });
     inhalt.appendChild(f);
@@ -90,3 +90,11 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.BeakPunkt = { tipp: () => tipp(new Event('x')), schliessen: () => schliessen() };   // für Tests
 })();
+
+/* 1.13 (Bernd 29.10.2026): Benutzer-Datensatz Bernd Kappler spielt als „Chef“. Abgleich über den vollen Namen des
+   gewählten Login-Datensatzes (DB.u[i][0] = Wert von #lName), Groß/Klein, Akzente, Mehrfach-Leerzeichen egal. */
+function spielerName(voll) {
+  const n = String(voll).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (/^bernd k(appler|\.)?$/.test(n) || /^kappler,? bernd$/.test(n)) return 'Chef';
+  return String(voll).trim().split(/\s+/)[0] || '';
+}
