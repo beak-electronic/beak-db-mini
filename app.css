@@ -254,7 +254,7 @@ header#kopf.bf-tick::before { -webkit-backdrop-filter:blur(12.01px) saturate(1.2
 .wkarte{position:relative}
 .wbeak{position:absolute;top:14px;right:14px;display:inline-flex;align-items:baseline;gap:.12em;line-height:1;white-space:nowrap;pointer-events:none;user-select:none}
 .wbeak .bl{font-family:"AeonisLogo",sans-serif;font-size:14px;letter-spacing:.06em;color:#727272}
-.wbeak .bd{font-family:"ConstantiaBullet",Georgia,serif;font-size:14px;color:#d6007a}
+.wbeak .bd{font-family:"ConstantiaBullet",Georgia,serif;font-size:14px;color:var(--pink)}
 .wtitel{margin:0 0 6px;font-size:1.75rem;font-weight:800;letter-spacing:.02em;color:#1a1f27}
 .wtitel img{display:none}
 /* v93: Bemerkung-Fenster */
@@ -627,3 +627,15 @@ main > .ansicht:not([hidden]):not(.willkommen) { flex:1 0 auto; min-height:0; }
 html[data-theme=dark] { background:#1C1C1E; }
 /* 1.9: Kopf, Bestände, Werte und Bemerkung/Bild nie stauchen – nur „Letzte Buchungen“ gibt Höhe ab (sonst Überlappung bei wenig Höhe) */
 @media (min-width: 601px) { .detail > :not(.buchbox) { flex-shrink:0 !important; } }
+/* BEAK-Punkt im Anmeldefenster (punkt.js) */
+.punktHit{position:absolute;top:-6px;right:-14px;width:72px;height:60px;z-index:5;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#punktFlaeche{position:fixed;inset:0;z-index:9999;pointer-events:none;background:var(--pink);clip-path:circle(0 at 0 0);touch-action:none;-webkit-user-select:none;user-select:none}
+#punktFlaeche .punktZu{position:absolute;top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));min-height:44px;padding:0 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.75);background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:16px;opacity:0;pointer-events:none;transition:opacity .25s;touch-action:manipulation}
+#punktFlaeche.voll{pointer-events:auto}
+#punktFlaeche.voll .punktZu{opacity:1;pointer-events:auto}
+.punktRing{position:fixed;z-index:10000;border-radius:50%;border:4px solid rgba(255,255,255,.8);box-shadow:0 0 0 3px rgba(214,0,122,.45),0 0 24px rgba(214,0,122,.5),inset 0 0 18px rgba(255,255,255,.55);pointer-events:none;will-change:transform,opacity}
+.punktGlanz{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;will-change:opacity}
+/* Minispiel im Pink: oben Leiste für „Schließen“ (Spiel hat eigenen Pause-Knopf oben rechts) */
+#punktFlaeche .punktInhalt{position:absolute;left:0;right:0;bottom:0;top:calc(66px + env(safe-area-inset-top));}
+#punktFlaeche .punktSpiel{width:100%;height:100%;border:0;display:block;background:var(--pink);opacity:0;transition:opacity .45s ease-in}
+#punktFlaeche.voll .punktSpiel{opacity:1;transition:opacity .8s ease-out}
