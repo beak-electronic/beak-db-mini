@@ -33,7 +33,31 @@ var BeakSuche = (function () {
     return h;
   }
   const woerter = e => (e || '').split(/\s+/).filter(Boolean);
+  // v1.17 Werte-Modus (Bernd 30.10.): "2 k 2 w 5" → Zahl + einzeln stehende Einheit = EIN Wert (2k, 2W),
+  // Werte und reine Zahlen dann GENAU (2k ≠ 2,2k / 22k, 5 = 5 bzw. 5%). Erkannt, sobald eine Einheit allein hinter einer Zahl steht.
+  const EINH = /^(k|m|r|n|u|µ|p|g|w|kw|mw|v|kv|mv|a|ma|ua|%|f|nf|uf|pf|hz|khz|mhz|ohm|mr|h|mh|uh)$/i;
+  function werteModus(ws) { for (let i = 1; i < ws.length; i++) if (EINH.test(ws[i]) && /^\d+([.,]\d+)?$/.test(ws[i - 1])) return true;
+    if (ws.length > 1) for (const w of ws) { const m = /^\d+(?:[.,]\d+)?([a-zµ%]+)$/i.exec(w); if (m && EINH.test(m[1])) return true; }
+    return false; }
+  function werteWoerter(ws) {
+    const r = [];
+    for (let i = 0; i < ws.length; i++) {
+      if (/^\d+([.,]\d+)?$/.test(ws[i]) && i + 1 < ws.length && EINH.test(ws[i + 1])) { r.push({ z: ws[i], e: ws[i + 1] }); i++; }
+      else { const m = /^(\d+(?:[.,]\d+)?)([a-zµ%]+)$/i.exec(ws[i]); if (m && EINH.test(m[2])) r.push({ z: m[1], e: m[2] }); else r.push(ws[i]); }
+    }
+    return r.map(w => {
+      if (typeof w === 'string') {
+        if (/^\d+([.,]\d+)?$/.test(w)) { const n = normalisieren(w); const rx = new RegExp('(?<![\\d.])' + reEsc(n) + '(?![\\d.])'); return h => rx.test(h); }
+        return w.includes('*') ? (rx => h => rx.test(h))(new RegExp(normalisieren(w).split('*').map(reEsc).join('.*'))) : wort(w);
+      }
+      const z = normalisieren(w.z), e = normalisieren('1' + w.e).slice(1);   // gleiche Einheiten-Schreibweise wie im Index
+      const rx = new RegExp('(?<![\\d.])' + reEsc(z) + '\\s*' + reEsc(e) + (/[a-z]$/.test(e) ? '(?![a-z])' : ''));
+      return h => rx.test(h);
+    });
+  }
   function muster(e) {
+    const ws0 = woerter(e);
+    if (werteModus(ws0)) { const pr = werteWoerter(ws0); return a => { const h = index(a); return pr.every(p => p(h)); }; }
     const pr = woerter(e).map(w => w.includes('*') ? (rx => h => rx.test(h))(new RegExp(normalisieren(w).split('*').map(reEsc).join('.*'))) : wort(w));
     return a => { const h = index(a); return pr.every(p => p(h)); };
   }

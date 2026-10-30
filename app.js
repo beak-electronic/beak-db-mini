@@ -340,7 +340,8 @@ function stklSortieren(z) {
 }
 let stklMark = null;   // Artikel, von dem aus „In Stückliste“ gewählt wurde → Zeile hinterlegen
 function stklTabelle(z, berechnet, sortierbar) {
-  const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${sSort.k === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${sSort.k === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
+  const aktK = sSort.k === '_dr' ? sSort.zeig : sSort.k;   // v1.15: bei gewählter Art die passende Spalte hervorheben
+  const kopf = S_SPALTEN.map(([k, t, c]) => sortierbar ? `<th class="${c} sortk${aktK === k ? ' an' : ''}" data-k="${k}">${t}<span class="pfeil">${aktK === k ? (sSort.d > 0 ? ' ▲' : ' ▼') : ''}</span></th>` : `<th class="${c}">${t}</th>`).join('');
   // v95: nach Referenzen sortiert → je Referenz eine Zeile
   if (sortierbar && sSort.k === 'ref') z = z.flatMap(r => { const refs = String(r.ref || '').split(/\s*[,;\n]\s*/).map(x => x.trim()).filter(Boolean);
     return refs.length > 1 ? refs.map(ref => ({ ...r, ref, anz: r.anz / refs.length })) : [r]; });
@@ -369,7 +370,7 @@ function stklZeigen(a) {
 }
 // v1.15: Art der Stückliste oben gewählt → Liste unten sofort entsprechend umsortieren
 document.addEventListener('change', e => { if (e.target && e.target.id === 'sArt' && aktStkl) {
-  const art = +e.target.value; sSort = art === 9 ? { k: 'nr', d: 1 } : { k: '_dr', d: 1, art }; stklZeigen(aktStkl); } });
+  const art = +e.target.value; sSort = art === 9 ? { k: 'nr', d: 1 } : { k: '_dr', d: 1, art, zeig: { 2: 'bez', 3: 'lo', 4: 'lo', 5: 'lo', 7: 'bez', 8: 'ref' }[art] || 'bez' }; stklZeigen(aktStkl); } });
 let letztesPdf = null;
 /** Drucken wie Windows: gewählte "Art der Stückliste" und Anzahl → PDF im gleichen Layout (ohne Preise) → Safari-PDF-Ansicht bzw. Teilen (Drucken / In Dateien sichern). */
 function stklPdf() {
