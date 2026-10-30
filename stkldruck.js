@@ -46,6 +46,8 @@ var BeakStklDruck = (function () {
       for (const p of alle) { const refs = p[2] || []; if (!refs.length) zeilen.push(Z(p)); else for (const [r, b] of refs) zeilen.push(Z(p, r || '', b || '')); }
       zeilen = art === 7 ? stabil(zeilen, (x, y) => (R('j', x) - R('j', y)) || refVergleich(x.ref, y.ref))
         : stabil(zeilen, (x, y) => ((x.ref.length === 0) - (y.ref.length === 0)) || refVergleich(x.ref, y.ref));
+    } else if (art === 9) {
+      zeilen = stabil(alle.map(p => Z(p)), (x, y) => x.nr - y.nr);
     } else {
       const k = String({ 0: 0, 6: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 4 }[art]);
       zeilen = stabil(alle.map(p => Z(p)), (x, y) => R(k, x) - R(k, y));

@@ -329,7 +329,7 @@ function stklZeilen(a) {
   return (DB.bg[a.n] || []).map(([nr, anz, refs], i) => { const p = ART.get(nr) || {}; return { i: i + 1, nr, bez: p.b, anz, ref: refText(refs), lo: [p.lo, p.lot, p.lp].filter(Boolean).join(' '), ist: p.sys }; });
 }
 // v87: Stückliste sortierbar (Tipp auf Spaltenkopf, nochmal = umgekehrt, Pfeil zeigt die Sortierung)
-let sSort = { k: 'i', d: 1 };
+let sSort = { k: 'nr', d: 1 };   // v1.15: passend zur ersten Art (sortiert: Artikel-Nr)
 const S_SPALTEN = [['i', 'Pos', 'r'], ['nr', 'Artikel-Nr', 'r'], ['bez', 'Bezeichnung', ''], ['anz', 'Anz', 'r'], ['ref', 'Referenzen', ''], ['lo', 'Lagerort', ''], ['ist', 'Bestand', 'r']];
 const sKoll = new Intl.Collator('de-DE', { numeric: true, sensitivity: 'base' });
 function stklSortieren(z) {
@@ -351,6 +351,10 @@ function stklTabelle(z, berechnet, sortierbar) {
       if (treffRef.length) {   // genaue Referenz gefunden (z. B. „R1“, „IC 3“) → nur diese Zeile(n), Referenz hervorheben
         z = treffRef.map(r => ({ ...r, refHl: q }));
       } else z = z.filter(r => { const t = `${r.nr} ${nrFmt(r.nr)} ${r.bez || ''}`.toLowerCase(); return w.every(x => t.includes(x)); }); } }
+  if (sortierbar && sSort.k === '_dr') {   // v1.15: Reihenfolge wie die oben gewählte Art der Stückliste (wie im Druck)
+    const rang = new Map(); try { BeakStklDruck.auftrag(DB, sSort.art, aktStkl.n, 1, '', new Date()).zeilen.forEach((x, i) => { if (!rang.has(x.nr)) rang.set(x.nr, i); }); } catch (e) {}
+    z = z.map(r => ({ ...r, _dr: rang.has(+r.nr) ? rang.get(+r.nr) : 1e9 }));
+  }
   if (sortierbar) z = stklSortieren(z);
   return `<table class="${sortierbar ? 'sortierbar' : ''}"><thead><tr>${kopf}</tr></thead><tbody>
     ${z.map(r => `<tr${sortierbar && stklMark != null && String(r.nr) === String(stklMark) ? ' class="markiert"' : ''}><td class="r">${r.i}</td><td class="r w"><span class="artlink" data-art="${r.nr}">${nrFmt(r.nr)}</span></td><td>${esc(r.bez)}</td><td class="r${berechnet ? ' w' : ''}">${fmt.format(r.anz)}</td><td>${r.refHl ? String(r.ref || '').split(/(\s*[,;\n]\s*)/).map(x => { const k = x.trim().toLowerCase(); return k && (k === r.refHl || k.replace(/\s+/g, '') === r.refHl.replace(/\s+/g, '')) ? `<mark>${esc(x)}</mark>` : esc(x); }).join('') : esc(r.ref)}</td><td>${esc(r.lo)}</td><td class="r">${r.ist != null ? fmt.format(r.ist) : ''}</td></tr>`).join('')}</tbody></table>`;
@@ -363,6 +367,9 @@ function stklZeigen(a) {
     <p class="fix klein">${z.length} Positionen · ${fmt.format(z.reduce((s, r) => s + (r.anz || 0), 0))} Teile je Baugruppe</p>${stklTabelle(z, false, true)}`;
   $$('#sDetail th.sortk').forEach(th => th.addEventListener('click', () => { const k = th.dataset.k; sSort = sSort.k === k ? { k, d: -sSort.d } : { k, d: 1 }; stklZeigen(aktStkl); }));
 }
+// v1.15: Art der Stückliste oben gewählt → Liste unten sofort entsprechend umsortieren
+document.addEventListener('change', e => { if (e.target && e.target.id === 'sArt' && aktStkl) {
+  const art = +e.target.value; sSort = art === 9 ? { k: 'nr', d: 1 } : { k: '_dr', d: 1, art }; stklZeigen(aktStkl); } });
 let letztesPdf = null;
 /** Drucken wie Windows: gewählte "Art der Stückliste" und Anzahl → PDF im gleichen Layout (ohne Preise) → Safari-PDF-Ansicht bzw. Teilen (Drucken / In Dateien sichern). */
 function stklPdf() {

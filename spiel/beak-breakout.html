@@ -1083,7 +1083,7 @@ function drawButton(c, b, big){
   c.fillStyle = PINK; c.font = (big ? 34 : 24) + "px NunitoSB"; c.textAlign = "center"; c.textBaseline = "alphabetic";
   c.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + (big ? 12 : 8.5));
 }
-function startRows(){ return (G.menuT && G.menuT.m > 1.15) || LAY.mode === "port" ? 5 : 10; }
+function startRows(){ return 10; }   // 1.14 (Bernd 29.10.): immer 10 Einträge, Menü skaliert passend
 function drawStart(){
   var c = ctx, rows = startRows();
   G.buttons = [];
@@ -1107,7 +1107,7 @@ function drawStart(){
 }
 function startBounds(){ var n = Math.min(startRows(), hsView().rows.length || 1); return [190, 676 + 30 + n * 34 + 56]; }
 
-function endRows(){ return (G.menuT && G.menuT.m > 1.15) || LAY.mode === "port" ? 5 : 10; }
+function endRows(){ return 10; }
 function endFooterY(){
   var n = Math.min(endRows(), Math.max(1, hsView().rows.length));
   if (LAY.mode === "land" && (!G.menuT || G.menuT.m <= 1.0001)) return 1010;
